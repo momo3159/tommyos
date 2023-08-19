@@ -1,6 +1,8 @@
 #pragma once 
 #include "frame_buffer_config.hpp"
 
+
+
 struct PixelColor {
   uint8_t r, g, b;
 };
@@ -35,3 +37,13 @@ class RGBResv8BitPerColorPixelWriter : public PixelWriter {
   
     virtual void Write(int x, int y, const PixelColor& c) override; 
 };
+
+
+template <typename T>
+struct Vector2D {
+  T x, y;
+};
+
+
+void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c); 
+void DrawRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c);
