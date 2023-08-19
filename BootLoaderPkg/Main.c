@@ -198,6 +198,22 @@ void CalcLoadAddressRange(Elf64_Ehdr* ehdr, UINT64* first, UINT64* last) {
 }
 
 
+void CopyLoadSegments(Elf64_Ehdr* ehdr) {
+  Elf64_Phdr* phdr = (Elf64_Phdr*)((UINT64)ehdr + ehdr->e_phoff);
+  
+  for (Elf64_Half i=0;i<ehdr->e_phnum;i++) {
+    if (phdr[i].p_type != PT_LOAD) continue;
+
+    UINT64 segm_in_file = (UINT64)ehdr + phdr[i].p_offset; // セグメントの開始位置
+    CopyMem((VOID*)phdr[i].p_vaddr, (VOID*)segm_in_file, phdr[i].p_filesz);
+
+    // 例）.bssセクションが含まれるセグメント
+    // memsz > p_fileszとなる場合がある。このような場合を考慮して0で初期化している。
+    UINTN remain_bytes = phdr[i].p_memsz - phdr[i].p_filesz;
+    SetMem((VOID*)(phdr[i].p_vaddr + phdr[i].p_filesz), remain_bytes, 0);
+  }
+}
+
 EFI_STATUS EFIAPI UefiMain(
   EFI_HANDLE image_handle,
   EFI_SYSTEM_TABLE* system_table
@@ -306,7 +322,27 @@ EFI_STATUS EFIAPI UefiMain(
     Print(L"error: %r", status);
     Halt();
   }
-  Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
+
+  Elf64_Ehdr* kernel_ehdr = (Elf64_Ehdr*)kernel_buffer;
+  UINT64 kernel_first_addr, kernel_last_addr;
+  CalcLoadAddressRange(kernel_ehdr, &kernel_first_addr, &kernel_last_addr);
+
+  UINTN num_pages = (kernel_last_addr - kernel_first_addr + 0xfff) / 0x1000;
+  status = gBS->AllocatePages(AllocateAddress, EfiLoaderData, num_pages, &kernel_first_addr);
+  if (EFI_ERROR (status)) {
+    Print(L"failed to allocate pages: %r\n", status);
+    Halt();
+  }
+
+  CopyLoadSegments(kernel_ehdr);
+  Print(L"Kernel: 0x%0lx - 0x%0lx\n", kernel_first_addr, kernel_last_addr);
+
+  status = gBS->FreePool(kernel_buffer);
+  if (EFI_ERROR(status)) {
+    Print(L"failed to free pool: %r\n", status);
+    Halt();
+  }
+
 
   status = gBS->ExitBootServices(image_handle, memmap.map_key);
   if (EFI_ERROR(status)) {
@@ -343,7 +379,7 @@ EFI_STATUS EFIAPI UefiMain(
   }
 
   // カーネルの呼び出し
-  UINT64 entry_addr = *(UINT64*)(kernel_base_addr + 24);
+  UINT64 entry_addr = *(UINT64*)(kernel_first_addr + 24);
 
   typedef void EntryPointType(const struct FrameBufferConfig*);
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
