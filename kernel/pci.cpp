@@ -18,12 +18,12 @@ namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効
   }
 
 
-  Error AddDevice(uint8_t bus, uint8_t device, uint8_t function, uint8_t header_type) {
+  Error AddDevice(const Device& device) {
     if (num_device == devices.size()) {
       return Error::kFull;
     }
 
-    devices[num_device] = Device{bus, device, function, header_type};
+    devices[num_device] = device;
     ++num_device;
     return Error::kSuccess;
   }
@@ -32,15 +32,14 @@ namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効
 
   Error ScanFunction(uint8_t bus, uint8_t device, uint8_t function) {
     auto header_type = ReadHeaderType(bus, device, function);
-    if (auto err = AddDevice(bus, device, function, header_type)) {
+    auto class_code = ReadClassCode(bus, device, function); 
+    
+    Device dev{bus, device, function, header_type, class_code};
+    if (auto err = AddDevice(dev)) {
       return err;
     }
-
-    auto class_code = ReadClassCode(bus, device, function);
-    uint8_t base = (class_code >> 24) & 0xffu;
-    uint8_t sub = (class_code >> 16) & 0xffu;
-
-    if (base == 0x06u && sub == 0x04u) { // NOTE: PCI to PCI bridge
+    
+    if (class_code.Match(0x06u, 0x04u)) { // NOTE: PCI to PCI bridge
       auto bus_numbers = ReadBusNumbers(bus, device, function);
       uint8_t secondary_bus = (bus_numbers >> 8) & 0xffu;
       return ScanBus(secondary_bus);
@@ -118,10 +117,16 @@ namespace pci{
     return (ReadData() >> 16) & 0xffu;
   }
 
-  uint32_t ReadClassCode(uint8_t bus, uint8_t device, uint8_t function) {
+  ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function) {
     auto address = MakeAddress(bus, device, function, 0x08);
     WriteAddress(address);
-    return ReadData();
+    auto reg = ReadData();
+
+    ClassCode cc;
+    cc.base      = (reg >> 24) & 0xffu;
+    cc.sub       = (reg >> 16) & 0xffu;
+    cc.interface = (reg >> 8) & 0xffu;
+    return cc;
   }
 
   uint32_t ReadBusNumbers(uint8_t bus, uint8_t device, uint8_t function) {
