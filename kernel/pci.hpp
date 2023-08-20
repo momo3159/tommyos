@@ -35,12 +35,17 @@ namespace pci {
   uint8_t ReadHeaderType(uint8_t bus, uint8_t device, uint8_t function);
   ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function);
   uint32_t ReadBusNumbers(uint8_t bus, uint8_t device, uint8_t function);
-
+  WithError<uint64_t> ReadBar(Device& device, unsigned int bar_index);
+  uint32_t ReadConfReg(const Device& dev, uint8_t reg_addr);
 
   inline uint16_t ReadVendorId(const Device& dev) {
     return ReadVendorId(dev.bus, dev.device, dev.function);
   }
  
+  constexpr uint8_t CalcBarAddress(unsigned int bar_index) {
+    return 0x10 + 4 * bar_index;
+  }
+
 
   // NOTE: ヘッダファイルでグローバル変数を定義する場合はinlineをつける
   inline std::array<Device, 32> devices;
