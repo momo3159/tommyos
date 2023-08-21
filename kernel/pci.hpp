@@ -46,7 +46,9 @@ namespace pci {
     return 0x10 + 4 * bar_index;
   }
 
+ void WriteConfReg(const Device& dev, uint8_t reg_addr, uint32_t value);
 
+ 
   // NOTE: ヘッダファイルでグローバル変数を定義する場合はinlineをつける
   inline std::array<Device, 32> devices;
   inline int num_device;

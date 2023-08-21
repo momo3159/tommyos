@@ -20,12 +20,12 @@ namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効
 
   Error AddDevice(const Device& device) {
     if (num_device == devices.size()) {
-      return Error::kFull;
+      return MAKE_ERROR(Error::kFull);
     }
 
     devices[num_device] = device;
     ++num_device;
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error ScanBus(uint8_t bus);
@@ -45,7 +45,7 @@ namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効
       return ScanBus(secondary_bus);
     }
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error ScanDevice(uint8_t bus, uint8_t device) {
@@ -54,7 +54,7 @@ namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効
     }
 
     if (IsSingleFunctionDevice(ReadHeaderType(bus, device, 0))) {
-      return Error::kSuccess;
+      return MAKE_ERROR(Error::kSuccess);
     }
 
     for (uint8_t function=1;function<8;function++) {
@@ -67,7 +67,7 @@ namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効
       }
     }
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error ScanBus(uint8_t bus) {
@@ -81,7 +81,7 @@ namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効
       }
     }
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 }
 
@@ -158,7 +158,7 @@ namespace pci{
       }
     }
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   uint32_t ReadConfReg(const Device& dev, uint8_t reg_addr) {
@@ -169,7 +169,7 @@ namespace pci{
 
   WithError<uint64_t> ReadBar(Device& device, unsigned int bar_index) {
     if (bar_index >= 6) {
-      return {0, Error::kIndexOutOfRange};
+      return {0, MAKE_ERROR(Error::kIndexOutOfRange)};
     }
 
     const auto addr = CalcBarAddress(bar_index);
@@ -179,19 +179,25 @@ namespace pci{
     // cf) BARの各ビットの意味
     // https://en.wikipedia.org/wiki/PCI_configuration_space
     if ((bar & 4u) == 0) {
-      return {bar, Error::kSuccess};
+      return {bar, MAKE_ERROR(Error::kSuccess)};
     }
 
     
 
     if (bar_index >= 5) {
-      return {0, Error::kIndexOutOfRange};
+      return {0, MAKE_ERROR(Error::kIndexOutOfRange)};
     }
 
     const auto bar_upper = ReadConfReg(device, addr + 4);
     return {
       bar | (static_cast<uint64_t>(bar_upper) << 32),
-      Error::kSuccess
+      MAKE_ERROR(Error::kSuccess)
     };
+  }
+
+  void WriteConfReg(const Device& dev, uint8_t reg_addr, uint32_t value) {
+    auto address = MakeAddress(dev.bus, dev.device, dev.function, reg_addr);
+    WriteAddress(address);
+    WriteData(value);
   }
 } 
