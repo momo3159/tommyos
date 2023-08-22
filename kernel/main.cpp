@@ -1,74 +1,37 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstdio>
+#include <numeric>
+#include <vector>
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
 #include "console.hpp"
 #include "pci.hpp"
 #include "logger.hpp"
-#include "logger.hpp"
+#include "mouse.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
 
-
-int WritePixel(const FrameBufferConfig& config, int x, int y, const PixelColor& c) {
-  const int pixel_position = config.pixels_per_scan_line * y + x;
-  uint8_t* p = &config.frame_buffer[4 * pixel_position];
-
-  if (config.pixel_format == kPixelBGRResv8BitPerColor) {
-    p[0] = c.b; p[1] = c.g; p[2] = c.r;
-  } else if (config.pixel_format == kPixelRGBResv8BitPerColor) {
-    p[0] = c.r; p[1] = c.g; p[2] = c.b;
-  } else {
-    return -1;
-  }
-
-  return 0;
-}
-
-void operator delete(void* obj) noexcept {}
-
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
 
-const int kMouseCursorWidth = 15;
-const int kMouseCursorHeight = 24;
-const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
-  "@              ",
-  "@@             ",
-  "@.@            ",
-  "@..@           ",
-  "@...@          ",
-  "@....@         ",
-  "@.....@        ",
-  "@......@       ",
-  "@.......@      ",
-  "@........@     ",
-  "@.........@    ",
-  "@..........@   ",
-  "@...........@  ",
-  "@............@ ",
-  "@......@@@@@@@@",
-  "@......@       ",
-  "@....@@.@      ",
-  "@...@ @.@      ",
-  "@..@   @.@     ",
-  "@.@    @.@     ",
-  "@@      @.@    ",
-  "@       @.@    ",
-  "         @.@   ",
-  "         @@@   ",
-};
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
 
 char console_buf[sizeof(Console)];
 Console* console;
+
+char mouse_cursor_buf[sizeof(MouseCursor)];
+MouseCursor* mouse_cursor;
+
+void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
+  mouse_cursor->MoveRelative({displacement_x, displacement_y});
+}
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -127,16 +90,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth / 5, 50}, {80, 80, 80});
   DrawRectangle(*pixel_writer, {10, kFrameHeight - 40}, {30, 30}, {160, 160, 160});
 
-  for (int dy=0;dy<kMouseCursorHeight;dy++) {
-    for (int dx=0;dx<kMouseCursorWidth;dx++) {
-      if (mouse_cursor_shape[dy][dx] == '@') {
-        pixel_writer->Write(200 + dx, 100 + dy, {0, 0, 0});
-      } else if (mouse_cursor_shape[dy][dx] == '.') {
-        pixel_writer->Write(200 + dx, 100 + dy, {255, 255, 255});
-      }
-    }
-  }
-
   auto err = pci::ScanAllBus();
   printk("ScanAllBus: %s\n", err.Name());
 
@@ -184,6 +137,35 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   Log(kInfo, "xHC starting\n");
   xhc.Run();
 
+  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
+    pixel_writer, kDesktopBGColor, {300, 200}
+  };
+  
+  usb::HIDMouseDriver::default_observer = MouseObserver;
+
+  for (int i=0;i<=xhc.MaxPorts();i++) {
+    // USBが接続されているポートに対して、各種設定を行う
+    // USBマウスの場合、MouseObserverをクラスドライバとして登録するなど
+    auto port = xhc.PortAt(i);
+    Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
+
+    if (port.IsConnected()) {
+      if (auto err = ConfigurePort(xhc, port)) {
+        Log(kError, "failed to configure port: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+        continue;
+      }
+    }
+  }
+
+  while(1) {
+    // カーネルのメインループ処理
+    if (auto err = ProcessEvent(xhc)) {
+      // ProcessEventによって、xHCにイベントがたまっているかを問い合わせる。
+      // あれば良しなに処理をする
+      // →ポーリング形式
+      Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+    }
+  }
   while(1) __asm__("hlt");
 }
 
