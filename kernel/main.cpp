@@ -73,9 +73,12 @@ usb::xhci::Controller* xhc;
 
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
-  while (xhc->PrimaryEventRing()->HasFront()) {
-    if (auto err = ProcessEvent(*xhc)) {
-      Log(kError, "Error while ProcessEvnet: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+  while(true) {
+    while (xhc->PrimaryEventRing()->HasFront()) {
+      printk("hogeeeee\n");
+      if (auto err = ProcessEvent(*xhc)) {
+        Log(kError, "Error while ProcessEvnet: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+      }
     }
   }
 
@@ -136,6 +139,13 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0), reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
   LoadIDT(sizeof(idt)-1, reinterpret_cast<uintptr_t>(&idt[0]));
 
+  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
+  pci::ConfigureMSIFixedDestination(
+    *xhc_dev, bsp_local_apic_id,
+    pci::MSITriggerMode::kLevel, pci::MSIDeliveryMode::kFixed,
+    InterruptVector::kXHCI, 0
+  );
+
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
   const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
@@ -155,6 +165,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
 
   Log(kInfo, "xHC starting\n");
   xhc.Run();
+
+  ::xhc = &xhc;
+  __asm__("sti");
 
   mouse_cursor = new(mouse_cursor_buf) MouseCursor{
     pixel_writer, kDesktopBGColor, {300, 200}
@@ -176,15 +189,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     }
   }
 
-  while(1) {
-    // カーネルのメインループ処理
-    if (auto err = ProcessEvent(xhc)) {
-      // ProcessEventによって、xHCにイベントがたまっているかを問い合わせる。
-      // あれば良しなに処理をする
-      // →ポーリング形式
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
-    }
-  }
   while(1) __asm__("hlt");
 }
 
