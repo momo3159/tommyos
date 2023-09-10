@@ -13,6 +13,7 @@
 #include "interrupt.hpp"
 #include "asmfunc.hpp"
 #include "queue.hpp"
+#include "memory_map.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -86,7 +87,10 @@ void IntHandlerXHCI(InterruptFrame* frame) {
   NotifyEndOfInterrupt();  
 }
 
-extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
+extern "C" void KernelMain(
+  const FrameBufferConfig& frame_buffer_config,
+  const MemoryMap& memory_map
+) {
   switch (frame_buffer_config.pixel_format) {
     case kPixelBGRResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf)
@@ -98,7 +102,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       break;
   }
 
-
   console = new(console_buf) Console{*pixel_writer, kDesktopFGColor, kDesktopBGColor};
   
   const int kFrameWidth = frame_buffer_config.horizontal_resolution;
@@ -109,6 +112,30 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth / 5, 50}, {80, 80, 80});
   DrawRectangle(*pixel_writer, {10, kFrameHeight - 40}, {30, 30}, {160, 160, 160});
 
+  const std::array available_memory_types {
+    MemoryType::kEfiBootServicesCode,
+    MemoryType::kEfiBootServicesCode,
+    MemoryType::kEfiConventionalMemory,
+  };
+
+  printk("memory_map: %p\n", &memory_map);
+  for (
+    uintptr_t iter=reinterpret_cast<uintptr_t>(memory_map.buffer);
+    iter < reinterpret_cast<uintptr_t>(memory_map.buffer) + memory_map.map_size;
+    iter += memory_map.descriptor_size
+  ) {
+    auto desc = reinterpret_cast<MemoryDescriptor*>(iter);
+    for (int i=0;i<available_memory_types.size();++i) {
+      if (desc->type == available_memory_types[i]) {
+        printk("type = %u, phys = %08lx - %08lx, pages = %lu, attr = %08lx\n", 
+          desc->type, desc->physical_start,
+          desc->physical_start + desc->number_of_pages * 4096 - 1,
+          desc->number_of_pages,
+          desc->attribute
+        );
+      }
+    }
+  }
   auto err = pci::ScanAllBus();
   printk("ScanAllBus: %s\n", err.Name());
 
