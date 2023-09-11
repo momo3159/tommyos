@@ -48,3 +48,40 @@ KernelMain:
 .fin:
   hlt 
   jmp .fin
+
+global LoadGDT ; void LoadGDT(uint16_t limit, uint64_t offset);
+LoadGDT:
+  push rbp
+  mov rbp, rsp
+  sub rsp, 10 ; スタックに10バイト分確保する
+  mov [rsp], di ; limit
+  mov [rsp + 2], rsi
+  lgdt [rsp]
+  mov rsp, rbp
+  pop rbp 
+  ret
+
+global SetDSAll ; void SetDSAll(uint16_t value);
+SetDSAll:
+  mov ds, di
+  mov es, di
+  mov fs, di 
+  mov gs, di
+  ret
+
+; https://babyron64.hatenablog.com/entry/2017/12/22/210124
+global SetCSSS ; void SetCSSS(uint16_t cs, uint16_t ss);
+SetCSSS:
+  push rbp
+  mov rbp, rsp
+  mov ss, si 
+  mov rax, .next
+  push rdi ; CS 
+  push rax ; RIP 
+  o64 retf
+.next:
+  mov rsp, rbp
+  pop rbp 
+  ret
+
+
