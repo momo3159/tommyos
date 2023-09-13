@@ -15,6 +15,7 @@
 #include "queue.hpp"
 #include "memory_map.hpp"
 #include "segment.hpp"
+#include "paging.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -124,6 +125,7 @@ extern "C" void KernelMainNewStack(
   const uint16_t kernel_ss = 2 << 3;
   SetDSAll(0);
   SetCSSS(kernel_cs, kernel_ss);
+  SetupIdentityPageTable();
 
   auto err = pci::ScanAllBus();
   printk("ScanAllBus: %s\n", err.Name());
