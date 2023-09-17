@@ -97,3 +97,5 @@ Layer* LayerManager::FindLayer(unsigned int id) {
   if (it == layers_.end()) return nullptr;
   else return it ->get();
 }
+
+LayerManager* layer_manager;
