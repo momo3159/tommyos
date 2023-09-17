@@ -25,3 +25,24 @@ class Layer {
     Vector2D<int> pos_;
     std::shared_ptr<Window> window_;
 };
+
+class LayerManager {
+  public:
+    void SetWriter(PixelWriter* writer);
+    Layer& NewLayer();
+    void Draw() const;
+
+    void Move(unsigned int id, Vector2D<int> new_position);
+    void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
+
+    void UpDown(unsigned int id, int new_height);
+    void Hide(unsigned int id);
+  
+  private:
+    PixelWriter* writer_{nullptr};
+    std::vector<std::unique_ptr<Layer>> layers_{};
+    std::vector<Layer*> layer_stack_{};
+    unsigned int latest_id_{0};
+
+    Layer* FindLayer(unsigned int id);
+};
