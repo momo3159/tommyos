@@ -19,6 +19,7 @@
 #include "memory_manager.hpp"
 #include "window.hpp"
 #include "layer.hpp"
+#include "timer.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -36,11 +37,6 @@ char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
 unsigned int mouse_layer_id;
 
-void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
-  layer_manager->Draw();
-}
-
 int printk(const char* format, ...) {
   va_list ap;
   int result;
@@ -52,6 +48,15 @@ int printk(const char* format, ...) {
 
   console->PutString(s);
   return result;
+}
+
+void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
+  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  StartLAPICTimer();
+  layer_manager->Draw();
+  auto elapsed = LAPICTimerElapsed();
+  StopLAPICTimer();
+  printk("MouseObserver: elapsed = %u\n", elapsed);
 }
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
@@ -119,6 +124,7 @@ extern "C" void KernelMainNewStack(
   console->SetWriter(pixel_writer);
 
   SetLogLevel(kWarn);
+  InitializeLAPICTimer();
 
   SetupSegments(); 
 
