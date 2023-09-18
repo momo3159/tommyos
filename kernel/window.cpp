@@ -25,7 +25,7 @@ void Window::Write(Vector2D<int> pos, PixelColor c) {
 
 void Window::DrawTo(PixelWriter& writer, Vector2D<int> position) {
   if (!transparent_color_) {
-    dst.Copy(position, shadow_buffer_);
+    // dst.Copy(position, shadow_buffer_);
     return;
   }
 

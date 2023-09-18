@@ -268,7 +268,7 @@ extern "C" void KernelMainNewStack(
   const int kFrameWidth = frame_buffer_config.horizontal_resolution;
   const int kFrameHeight = frame_buffer_config.vertical_resolution;
 
-  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
+  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight, frame_buffer_config.pixel_format);
   auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);
@@ -276,7 +276,7 @@ extern "C" void KernelMainNewStack(
   console->SetWriter(bgwriter);
 
   auto mouse_window = std::make_shared<Window>(
-    kMouseCursorWidth, kMouseCursorHeight
+    kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format
   );
   mouse_window->SetTransparentColor(kMouseTransparentColor);
   DrawMouseCursor(mouse_window->Writer(), {0, 0});

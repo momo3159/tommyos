@@ -2,6 +2,7 @@
 #include <vector>
 #include <optional>
 #include "graphics.hpp"
+#include "frame_buffer.hpp"
 
 class Window {
   public: 
