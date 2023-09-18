@@ -32,7 +32,7 @@ Vector2D<T> ElementMin(const Vector2D<T>& lhs, const Vector2D<T>& rhs) {
 template <typename T>
 struct Rectangle {
   Vector2D<int> pos, size;
-}
+};
 
 struct PixelColor {
   uint8_t r, g, b;

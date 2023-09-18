@@ -35,6 +35,9 @@ class Window {
     WindowWriter* Writer();
     void SetTransparentColor(std::optional<PixelColor> c);
 
+    // ウィンドウの領域内で、中の矩形領域を移動させる
+    void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
+
   private:
     int width_, height_;
     std::vector<std::vector<PixelColor>> data_{};

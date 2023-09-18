@@ -46,6 +46,11 @@ int printk(const char* format, ...) {
   result = vsprintf(s, format, ap);
   va_end(ap);
 
+  StartLAPICTimer();
+  console->PutString(s);
+  auto elapsed = LAPICTimerElapsed();
+  StopLAPICTimer();
+  sprintf(s, "[%9d]", elapsed);
   console->PutString(s);
   return result;
 }
@@ -53,6 +58,8 @@ int printk(const char* format, ...) {
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
   layer_manager->Draw();
+
+  printk("hogehogehoge\n");
 }
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
@@ -268,8 +275,7 @@ extern "C" void KernelMainNewStack(
   auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);
-
-  console->SetWriter(bgwriter);
+  console->SetWindow(bgwindow);
 
   auto mouse_window = std::make_shared<Window>(
     kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format
