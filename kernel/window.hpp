@@ -10,8 +10,8 @@ class Window {
       // 実際にフレームバッファに書き込むのはWindow::DrawTo
       public: 
         WindowWriter(Window& window) : window_{window} {}
-        virtual void Write(int x, int y, const PixelColor& c) override {
-          window_.At(x, y) = c;
+        virtual void Write(Vector2D<int> pos, const PixelColor& c) override {
+          window_.Write(pos, c);
         }
         virtual int Width() const override { return window_.Width(); }
         virtual int Height() const override { return window_.Height(); }
@@ -25,12 +25,12 @@ class Window {
     Window(const Window& rhs) = delete;
     Window& operator=(const Window& rhs) = delete;
     
+    void Write(Vector2D<int> pos, PixelColor c);
     void DrawTo(PixelWriter& writer, Vector2D<int> position);
 
     int Height() const;
     int Width() const;
-    PixelColor& At(int x, int y);
-    const PixelColor& At(int x, int y) const;
+    const PixelColor& At(Vector2D<int> pos) const;
     WindowWriter* Writer();
     void SetTransparentColor(std::optional<PixelColor> c);
 
@@ -39,4 +39,6 @@ class Window {
     std::vector<std::vector<PixelColor>> data_{};
     WindowWriter writer_{*this};
     std::optional<PixelColor> transparent_color_{std::nullopt};
+
+    // FrameBuffer shadow_buffer_{};
 };
