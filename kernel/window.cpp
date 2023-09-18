@@ -23,13 +23,14 @@ void Window::Write(Vector2D<int> pos, PixelColor c) {
   shadow_buffer_.Writer().Write(pos, c);
 }
 
-void Window::DrawTo(PixelWriter& writer, Vector2D<int> position) {
+void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
   if (!transparent_color_) {
-    // dst.Copy(position, shadow_buffer_);
+    dst.Copy(position, shadow_buffer_);
     return;
   }
 
   const auto tc = transparent_color_.value();
+  auto& writer = dst.Writer();
   for (int y=0;y<Height();y++) {
     for (int x=0;x<Width();x++) {
       const auto c = At(Vector2D<int>{x, y});

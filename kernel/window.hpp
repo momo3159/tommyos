@@ -27,7 +27,7 @@ class Window {
     Window& operator=(const Window& rhs) = delete;
     
     void Write(Vector2D<int> pos, PixelColor c);
-    void DrawTo(PixelWriter& writer, Vector2D<int> position);
+    void DrawTo(FrameBuffer& screen, Vector2D<int> position);
 
     int Height() const;
     int Width() const;
