@@ -20,7 +20,7 @@ class Window {
         Window& window_;
     };
 
-    Window(int width, int height);
+    Window(int width, int height, PixelFormat shadow_format);
     ~Window() = default;
     Window(const Window& rhs) = delete;
     Window& operator=(const Window& rhs) = delete;
@@ -40,5 +40,5 @@ class Window {
     WindowWriter writer_{*this};
     std::optional<PixelColor> transparent_color_{std::nullopt};
 
-    // FrameBuffer shadow_buffer_{};
+    FrameBuffer shadow_buffer_{};
 };
