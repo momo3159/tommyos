@@ -35,7 +35,6 @@ Console* console;
 
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
-unsigned int mouse_layer_id;
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -50,8 +49,15 @@ int printk(const char* format, ...) {
   return result;
 }
 
+unsigned int mouse_layer_id;
+Vector2D<int> screen_size;
+Vector2D<int> mouse_position;
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
+
+  newpos = ElementMin(newpos, screen_size + Vector2D<int>{-16, -24});
+  mouse_position = ElementMax(newpos, {0, 0});
+  layer_manager->Move(mouse_layer_id, mouse_position);
   layer_manager->Draw();
 }
 
@@ -261,10 +267,17 @@ extern "C" void KernelMainNewStack(
     }
   }
 
-  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
-  const int kFrameHeight = frame_buffer_config.vertical_resolution;
+  FrameBuffer screen;
+  if (auto err = screen.Initialize(frame_buffer_config)) {
+    Log(kError, "failed to initialize frame buffer: %s at %s:%d\n", 
+      err.Name(), err.File(), err.Line()
+    );
+  }
 
-  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight, frame_buffer_config.pixel_format);
+  screen_size.x = frame_buffer_config.horizontal_resolution; 
+  screen_size.y = frame_buffer_config.vertical_resolution;
+
+  auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, frame_buffer_config.pixel_format);
   auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);
@@ -275,13 +288,7 @@ extern "C" void KernelMainNewStack(
   );
   mouse_window->SetTransparentColor(kMouseTransparentColor);
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
-
-  FrameBuffer screen;
-  if (auto err = screen.Initialize(frame_buffer_config)) {
-    Log(kError, "failed to initialize frame buffer: %s at %s:%d\n", 
-      err.Name(), err.File(), err.Line()
-    );
-  }
+  mouse_position = {200, 200};
 
   layer_manager = new LayerManager;
   layer_manager->SetWriter(&screen);
@@ -292,7 +299,7 @@ extern "C" void KernelMainNewStack(
     .ID();
   mouse_layer_id = layer_manager->NewLayer()
     .SetWindow(mouse_window)
-    .Move({200, 200})
+    .Move(mouse_position)
     .ID();
   
   layer_manager->UpDown(bglayer_id, 0);
