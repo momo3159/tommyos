@@ -62,7 +62,37 @@ void Window::SetTransparentColor(std::optional<PixelColor> c) {
 }
 
 void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
-  // TODO: data_の更新はしなくてよい？
-  
+  // TODO: data_の更新は必要？不要？
+  MovePixelColors(dst_pos, src);
   shadow_buffer_.Move(dst_pos, src);
 }
+
+void Window::MovePixelColors(Vector2D<int> dst_pos, const Rectangle<int>& src) {
+    if (dst_pos.y < src.pos.y) {
+      for (int dy=0;dy<src.size.y;dy++) {
+        auto dst_row = data_[dst_pos.y + dy];
+        auto dst_start_x = dst_row.begin() + dst_pos.x;
+        auto dst_end_x   = dst_row.begin() + dst_pos.x + src.size.x;
+
+        auto src_row = data_[src.pos.y + dy];
+        auto src_start_x = src_row.begin() + src.pos.x;
+        auto src_end_x   = src_row.begin() + src.pos.x + src.size.x;
+        
+        dst_row.erase(dst_start_x, dst_end_x);
+        dst_row.insert(dst_row.begin() + dst_pos.x, src_start_x, src_end_x);
+      }
+    } else {
+      for (int dy=0;dy<src.size.y;dy++) {   
+        auto dst_row = data_[dst_pos.y + dy];
+        auto dst_start_x = dst_row.begin() + dst_pos.x;
+        auto dst_end_x   = dst_row.begin() + dst_pos.x + src.size.x;
+
+        auto src_row = data_[src.pos.y + dy];
+        auto src_start_x = src_row.begin() + src.pos.x;
+        auto src_end_x   = src_row.begin() + src.pos.x + src.size.x;
+        
+        dst_row.erase(dst_start_x, dst_end_x);
+        dst_row.insert(dst_row.begin() + dst_pos.x, src_start_x, src_end_x);
+      }
+    }
+  }

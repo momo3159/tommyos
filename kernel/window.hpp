@@ -45,4 +45,6 @@ class Window {
     std::optional<PixelColor> transparent_color_{std::nullopt};
 
     FrameBuffer shadow_buffer_{};
+
+    void MovePixelColors(Vector2D<int> dst_pos, const Rectangle<int>& src);
 };
