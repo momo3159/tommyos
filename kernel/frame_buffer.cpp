@@ -25,8 +25,8 @@ namespace {
 Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
   config_ = config;
 
-  const auto bits_per_pixel = BitsPerPixel(config_.pixel_format);
-  if (bits_per_pixel <= 0) {
+  const auto bytes_per_pixel = BytesPerPixel(config_.pixel_format);
+  if (bytes_per_pixel <= 0) {
     return MAKE_ERROR(Error::kUnknownPixelFormat);
   }
 
@@ -34,10 +34,8 @@ Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
     // frame_bufferにすでに書き込み先がある場合
     buffer_.resize(0);
   } else {
-    const auto byte_per_pixel = (bits_per_pixel + 7) / 8;
-
     buffer_.resize(
-      config_.horizontal_resolution * config_.vertical_resolution * byte_per_pixel
+      config_.horizontal_resolution * config_.vertical_resolution * bytes_per_pixel
     );
     config_.frame_buffer = buffer_.data();
     config_.pixels_per_scan_line = config_.horizontal_resolution;
@@ -62,33 +60,24 @@ Error FrameBuffer::Copy(Vector2D<int> pos, const FrameBuffer& src) {
     return MAKE_ERROR(Error::kUnknownPixelFormat);
   }
 
-  const auto bits_per_pixel = BitsPerPixel(config_.pixel_format);
-  if (bits_per_pixel <= 0) {
+  const auto bytes_per_pixel = BytesPerPixel(config_.pixel_format);
+  if (bytes_per_pixel <= 0) {
     return MAKE_ERROR(Error::kUnknownPixelFormat);
   }
+  
+  const auto dst_size = FrameBufferSize(config_);
+  const auto src_size = FrameBufferSize(src.config_);
 
-  const auto dst_width = config_.horizontal_resolution;
-  const auto dst_height = config_.vertical_resolution;
-  const auto src_width = src.config_.horizontal_resolution;
-  const auto src_height = src.config_.vertical_resolution;
+  const auto dst_start = ElementMax(pos, {0, 0});
+  const auto dst_end = ElementMin(pos + src_size, dst_size);
 
-  const auto copy_start_dst_x = std::max(0, pos.x);
-  const auto copy_start_dst_y = std::max(0, pos.y);
-  const auto copy_end_dst_x = std::min(dst_width, pos.x + src_width);
-  const auto copy_end_dst_y = std::min(dst_height, pos.y + src_height); 
+  auto dst_buf = FrameAddrAt(dst_start, config_);
+  auto src_buf = FrameAddrAt({std::abs(std::max(0, pos.x)- pos.x), std::abs(std::max(0, pos.y) - pos.y)}, src.config_);
 
-  const auto bytes_per_pixel = (bits_per_pixel + 7) / 8;
-  const auto bytes_per_copy_line = (copy_end_dst_x - copy_start_dst_x) * bytes_per_pixel;
-
-  auto dst_buf = config_.frame_buffer + 
-    (config_.pixels_per_scan_line * copy_start_dst_y + copy_start_dst_x) * bytes_per_pixel;
-  auto src_buf = src.config_.frame_buffer + 
-    (src.config_.pixels_per_scan_line * std::abs(copy_start_dst_y - pos.y) + std::abs(copy_start_dst_x - pos.x)) * bytes_per_pixel;
-    
-  for (int dy=0;dy<copy_end_dst_y - copy_start_dst_x;dy++) {
-    memcpy(dst_buf, src_buf, bytes_per_copy_line);
-    dst_buf += bytes_per_pixel * config_.pixels_per_scan_line;
-    src_buf += bytes_per_pixel * src.config_.pixels_per_scan_line;
+  for (int y=dst_start.y;y<dst_end.y;y++) {
+    memcpy(dst_buf, src_buf, bytes_per_pixel * (dst_end.x - dst_start.x));
+    dst_buf += BytesPerScanLine(config_);
+    src_buf += BytesPerScanLine(src.config_);
   }
 
   return MAKE_ERROR(Error::kSuccess);
