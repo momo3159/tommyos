@@ -48,3 +48,5 @@ class Window {
 
     void MovePixelColors(Vector2D<int> dst_pos, const Rectangle<int>& src);
 };
+
+void DrawWindow(PixelWriter& writer, const char* title);
