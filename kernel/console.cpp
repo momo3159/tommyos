@@ -7,7 +7,7 @@ Console::Console(
   const PixelColor& fg_color_, 
   const PixelColor& bg_color_) 
 : writer{nullptr}, window_{}, fg_color{fg_color_}, bg_color{bg_color_},
-  buffer{}, cursor_row{0}, cursor_column{0} {}
+  buffer{}, cursor_row{0}, cursor_column{0}, layer_id_{0} {}
 
 void Console::PutString(const char* s) {
   while(*s) {
@@ -21,7 +21,7 @@ void Console::PutString(const char* s) {
     ++s;
   }
 
-  if (layer_manager) layer_manager->Draw();
+  if (layer_manager) layer_manager->Draw(layer_id_);
 }
 
 void Console::NewLine() {
@@ -48,6 +48,7 @@ void Console::NewLine() {
 }
 
 void Console::Refresh() {
+  FillRectangle(*writer, {0, 0}, {8 * kColumns, 16 * kRows}, bg_color);
   for (int row=0;row<kRows;row++) {
     WriteString(*writer, Vector2D<int>{0, 16 * row}, buffer[row], fg_color);
   }
@@ -66,4 +67,12 @@ void Console::SetWindow(const std::shared_ptr<Window>& window) {
   window_ = window;
   writer  = window->Writer();
   Refresh();
+}
+
+void Console::SetLayerID(unsigned int id) {
+  layer_id_ = id;
+}
+
+unsigned int Console::LayerID() const {
+  return layer_id_;
 }

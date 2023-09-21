@@ -27,10 +27,11 @@ class Window {
     Window& operator=(const Window& rhs) = delete;
     
     void Write(Vector2D<int> pos, PixelColor c);
-    void DrawTo(FrameBuffer& screen, Vector2D<int> position);
+    void DrawTo(FrameBuffer& screen, Vector2D<int> position, const Rectangle<int>& area);
 
     int Height() const;
     int Width() const;
+    Vector2D<int> Size() const;
     const PixelColor& At(Vector2D<int> pos) const;
     WindowWriter* Writer();
     void SetTransparentColor(std::optional<PixelColor> c);

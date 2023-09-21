@@ -24,9 +24,11 @@ void Window::Write(Vector2D<int> pos, PixelColor c) {
   shadow_buffer_.Writer().Write(pos, c);
 }
 
-void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
+void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position, const Rectangle<int>& area) {
   if (!transparent_color_) {
-    dst.Copy(position, shadow_buffer_);
+    Rectangle<int> window_area{position, Size()};
+    Rectangle<int> intersection = area & window_area;
+    dst.Copy(intersection.pos, shadow_buffer_, {intersection.pos - position, intersection.size});
     return;
   }
 
@@ -101,9 +103,12 @@ void Window::MovePixelColors(Vector2D<int> dst_pos, const Rectangle<int>& src) {
         dst_row.erase(dst_start_x, dst_end_x);
         dst_row.insert(dst_row.begin() + dst_pos.x, src_start_x, src_end_x);
       }
-    }
-  }
+    }  
+}
 
+Vector2D<int> Window::Size() const {
+  return {width_, height_};
+}
 
 namespace {
   const int kCloseButtonWidth = 16;
@@ -124,7 +129,7 @@ namespace {
     ".$$$$$$$$$$$$$$@",
     "@@@@@@@@@@@@@@@@",
   };
-  
+
   constexpr PixelColor ToColor(uint32_t c) {
     return {
       static_cast<uint8_t>((c >> 16) & 0xff),
