@@ -25,3 +25,6 @@ class Console {
     int cursor_row, cursor_column;
     unsigned int layer_id_;
 };
+
+extern Console* console;
+void InitializeConsole();

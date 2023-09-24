@@ -26,9 +26,6 @@
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
 
-char console_buf[sizeof(Console)];
-Console* console;
-
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
 
@@ -127,15 +124,15 @@ extern "C" void KernelMainNewStack(
   MemoryMap memory_map{memory_map_ref};
 
   InitializeGraphics(frame_buffer_config_ref);
+  InitializeConsole();
+
+  SetLogLevel(kWarn);
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
   // LayerManagerの準備が終わったタイミングで切り替える
   DrawDesktop(*pixel_writer);
-  console = new(console_buf) Console{kDesktopFGColor, kDesktopBGColor};
-  console->SetWriter(pixel_writer);
 
-  SetLogLevel(kWarn);
   InitializeLAPICTimer();
 
   SetupSegments(); 
