@@ -42,41 +42,7 @@ int printk(const char* format, ...) {
   return result;
 }
 
-unsigned int mouse_layer_id;
-Vector2D<int> screen_size;
-Vector2D<int> mouse_position;
-void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
-  static unsigned int mouse_drag_layer_id = 0;
-  static uint8_t previous_buttons = 0;
 
-  const auto oldpos = mouse_position;
-  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
-  newpos = ElementMin(newpos, screen_size + Vector2D<int>{-16, -24});
-  mouse_position = ElementMax(newpos, {0, 0});
-
-  const auto pos_diff = mouse_position - oldpos;
-  layer_manager->Move(mouse_layer_id, mouse_position);
-
-  const bool previous_left_pressed = (previous_buttons & 0x01);
-  const bool left_pressed = (buttons & 0x01);
-  if (!previous_left_pressed && left_pressed) {
-    // 左ボタンを押したとき
-    auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
-    if (layer && layer->IsDraggable()) {
-      mouse_drag_layer_id = layer->ID();
-    }
-  } else if (previous_left_pressed && left_pressed) {
-    // 左ボタンを押し続けているとき
-    if (mouse_drag_layer_id > 0) {
-      layer_manager->MoveRelative(mouse_drag_layer_id, pos_diff);
-    }
-  } else if (previous_left_pressed && !left_pressed) {
-    // 左ボタンを離したとき
-    mouse_drag_layer_id = 0;
-  }
-
-  previous_buttons = buttons;
-}
 
 void InitializeMainWindow() {
   auto main_window = std::make_shared<Window>(
@@ -119,6 +85,8 @@ extern "C" void KernelMainNewStack(
 
   InitializeLayer();
   InitializeMainWindow();
+  InitializeMouse();
+  layer_manager->Draw({{0, 0}, ScreenSize()});
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
@@ -138,29 +106,10 @@ extern "C" void KernelMainNewStack(
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
   ::main_queue = &main_queue; // https://rainbow-engine.com/cpp-scope-operator/
-  usb::HIDMouseDriver::default_observer = MouseObserver;
-
 
 
 
   
-  
-  auto mouse_window = std::make_shared<Window>(
-    kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format
-  );
-  mouse_window->SetTransparentColor(kMouseTransparentColor);
-  DrawMouseCursor(mouse_window->Writer(), {0, 0});
-  mouse_position = {200, 200};
-
-
-
-  mouse_layer_id = layer_manager->NewLayer()
-    .SetWindow(mouse_window)
-    .Move(mouse_position)
-    .ID();
-  
-  layer_manager->UpDown(mouse_layer_id, 3);
-  layer_manager->Draw(bglayer_id);
 
   char str[128];
   unsigned int count = 0;
