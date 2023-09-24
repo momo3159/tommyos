@@ -12,6 +12,7 @@
 #include "usb/xhci/ring.hpp"
 #include "usb/xhci/port.hpp"
 #include "usb/xhci/devmgr.hpp"
+#include <memory>
 
 namespace usb::xhci {
   class Controller {
@@ -64,4 +65,8 @@ namespace usb::xhci {
    * @return イベントを正常に処理できたら Error::kSuccess
    */
   Error ProcessEvent(Controller& xhc);
+
+  extern Contoller* controller;
+  void Initialize();
+  void ProcessEvents();
 }

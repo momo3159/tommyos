@@ -75,26 +75,6 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
   previous_buttons = buttons;
 }
 
-void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
-  bool intel_ehc_exist = false;
-  for (int i = 0; i < pci::num_device; ++i) {
-    if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x20u) /* EHCI */ &&
-        0x8086 == pci::ReadVendorId(pci::devices[i])) {
-      intel_ehc_exist = true;
-      break;
-    }
-  }
-  if (!intel_ehc_exist) {
-    return;
-  }
-
-  uint32_t superspeed_ports = pci::ReadConfReg(xhc_dev, 0xdc); // USB3PRM
-  pci::WriteConfReg(xhc_dev, 0xd8, superspeed_ports); // USB3_PSSEN
-  uint32_t ehci2xhci_ports = pci::ReadConfReg(xhc_dev, 0xd4); // XUSB2PRM
-  pci::WriteConfReg(xhc_dev, 0xd0, ehci2xhci_ports); // XUSB2PR
-  Log(kDebug, "SwitchEhci2Xhci: SS = %02, xHCI = %02x\n",
-      superspeed_ports, ehci2xhci_ports);
-}
 
 usb::xhci::Controller* xhc;
 
@@ -128,6 +108,8 @@ extern "C" void KernelMainNewStack(
   InitializeSegmentation();
   InitializePaging();
   InitializePCI();
+  usb::xhci::Initialize();
+
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
@@ -138,53 +120,9 @@ extern "C" void KernelMainNewStack(
 
 
   SetupIdentityPageTable();
-
-  pci::Device* xhc_dev = nullptr;
-  for (int i=0;i<pci::num_device;i++) {
-    if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
-      xhc_dev = &pci::devices[i];
-
-      if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
-        // NOTE: intel製のxHCを優先的に選択する
-        break;
-      }
-    }
-  }
-
-  if (xhc_dev) {
-    Log(kInfo, "xHC has been found: %d.%d.%d\n", xhc_dev->bus, xhc_dev->device, xhc_dev->function);
-  }
-
   const uint16_t cs = GetCS();
   SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0), reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
   LoadIDT(sizeof(idt)-1, reinterpret_cast<uintptr_t>(&idt[0]));
-
-  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
-  pci::ConfigureMSIFixedDestination(
-    *xhc_dev, bsp_local_apic_id,
-    pci::MSITriggerMode::kLevel, pci::MSIDeliveryMode::kFixed,
-    InterruptVector::kXHCI, 0
-  );
-
-  const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
-  Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
-  const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
-  Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
-
-  usb::xhci::Controller xhc{xhc_mmio_base}; // NOTE: ホストコントローラを制御する機能を持つクラス
-  if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
-    SwitchEhci2Xhci(*xhc_dev); // NOTE: EHCIからXHCIでの制御に切り替え
-  }
-
-  // NOTE: xHCを初期化して起動する
-  // 起動後、USB機器の認識などをxHCが行う
-  {
-    auto err = xhc.Initialize();
-    Log(kDebug, "xhc.Initialize: %s\n", err.Name());
-  }
-
-  Log(kInfo, "xHC starting\n");
-  xhc.Run();
 
   ::xhc = &xhc;
   __asm__("sti");
@@ -195,19 +133,6 @@ extern "C" void KernelMainNewStack(
   ::main_queue = &main_queue; // https://rainbow-engine.com/cpp-scope-operator/
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
-  for (int i=0;i<=xhc.MaxPorts();i++) {
-    // USBが接続されているポートに対して、各種設定を行う
-    // USBマウスの場合、MouseObserverをクラスドライバとして登録するなど
-    auto port = xhc.PortAt(i);
-    Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
-
-    if (port.IsConnected()) {
-      if (auto err = ConfigurePort(xhc, port)) {
-        Log(kError, "failed to configure port: %s at %s:%d\n", err.Name(), err.File(), err.Line());
-        continue;
-      }
-    }
-  }
 
   FrameBuffer screen;
   if (auto err = screen.Initialize(frame_buffer_config)) {
