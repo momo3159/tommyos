@@ -123,7 +123,9 @@ class RGBResv8BitPerColorPixelWriter : public FrameBufferWriter {
     virtual void Write(Vector2D<int> pos, const PixelColor& c) override; 
 };
 
-
+extern FrameBufferConfig screen_config;
+extern PixelWriter* screen_writer;
+void InitializeGraphics(const FrameBufferConfig &config);
 
 void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c); 
 void DrawRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c);

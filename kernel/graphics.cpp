@@ -12,6 +12,29 @@ void RGBResv8BitPerColorPixelWriter::Write(Vector2D<int> pos, const PixelColor& 
   p[0] = c.r; p[1] = c.g; p[2] = c.b;
 }
 
+FrameBufferConfig screen_config;
+PixelWriter* screen_writer;
+
+namespace {
+  char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
+}
+void InitializeGraphics(const FrameBufferConfig& config) {
+  ::screen_config = config;
+
+  switch (frame_buffer_config.pixel_format) {
+    case kPixelBGRResv8BitPerColor:
+      ::pixel_writer = new(pixel_writer_buf)
+        BGRResv8BitPerColorPixelWriter{frame_buffer_config};
+      break;
+    case kPixelRGBResv8BitPerColor:
+      ::pixel_writer = new(pixel_writer_buf)
+        RGBResv8BitPerColorPixelWriter{frame_buffer_config};
+      break;
+    default:
+      exit(1);
+  }
+}
+
 void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c) {
   for (int dy=0;dy<size.y;dy++) {
     for (int dx=0;dx<size.x;dx++) {

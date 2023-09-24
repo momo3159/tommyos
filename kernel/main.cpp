@@ -26,10 +26,6 @@
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
 
-
-char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
-PixelWriter* pixel_writer;
-
 char console_buf[sizeof(Console)];
 Console* console;
 
@@ -128,19 +124,9 @@ extern "C" void KernelMainNewStack(
   const FrameBufferConfig& frame_buffer_config_ref,
   const MemoryMap& memory_map_ref
 ) {
-  FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
   MemoryMap memory_map{memory_map_ref};
 
-  switch (frame_buffer_config.pixel_format) {
-    case kPixelBGRResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf)
-        BGRResv8BitPerColorPixelWriter{frame_buffer_config};
-      break;
-    case kPixelRGBResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf)
-        RGBResv8BitPerColorPixelWriter{frame_buffer_config};
-      break;
-  }
+  InitializeGraphics(frame_buffer_config_ref);
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
