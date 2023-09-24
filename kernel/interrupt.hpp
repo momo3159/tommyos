@@ -1,7 +1,9 @@
 #pragma once 
 #include <cstdint>
 #include <array>
+#include <deque>
 #include "x86_descriptor.hpp"
+#include "message.hpp"
 
 struct InterruptFrame {
   uint64_t rip;
@@ -58,4 +60,4 @@ constexpr InterruptDescriptorAttribute MakeIDTAttr(
 void NotifyEndOfInterrupt();
 void SetIDTEntry(InterruptDescriptor& desc, InterruptDescriptorAttribute attr, uint64_t offest, uint16_t segment_selector);
 
-
+void InitializeInterrupt(std::deque<Message>* msg_queue);

@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <numeric>
 #include <vector>
+#include <deque>
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
@@ -20,6 +21,7 @@
 #include "window.hpp"
 #include "layer.hpp"
 #include "timer.hpp"
+#include "message.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -78,19 +80,7 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
 
 usb::xhci::Controller* xhc;
 
-struct Message {
-  enum Type {
-    kInterruptXHCI,
-  } type;
-};
-
-ArrayQueue<Message>* main_queue;
-
-__attribute__((interrupt))
-void IntHandlerXHCI(InterruptFrame* frame) {
-  main_queue->Push(Message{Message::kInterruptXHCI});
-  NotifyEndOfInterrupt();  
-}
+std::deque<Message>* main_queue;
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
@@ -107,6 +97,8 @@ extern "C" void KernelMainNewStack(
 
   InitializeSegmentation();
   InitializePaging();
+  ::main_queue = new std::deque<Message>(32);
+  InitializeInterrupt(main_queue);
   InitializePCI();
   usb::xhci::Initialize();
 
@@ -121,8 +113,6 @@ extern "C" void KernelMainNewStack(
 
 
   const uint16_t cs = GetCS();
-  SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0), reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
-  LoadIDT(sizeof(idt)-1, reinterpret_cast<uintptr_t>(&idt[0]));
 
   ::xhc = &xhc;
   __asm__("sti");
