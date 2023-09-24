@@ -4,6 +4,7 @@
 #include <numeric>
 #include <vector>
 #include <deque>
+#include <limits>
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
@@ -77,6 +78,20 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
   previous_buttons = buttons;
 }
 
+void InitializeMainWindow() {
+  auto main_window = std::make_shared<Window>(
+    160, 52, screen_config.pixel_format
+  );
+  DrawWindow(*main_window->Writer(), "Hello Window");
+
+  auto main_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(main_window)
+    .SetDraggable(true)
+    .Move({200, 100})
+    .ID();
+
+  layer_manager->UpDown(main_window_layer_id, std::numeric_limits<int>::max());
+}
 
 usb::xhci::Controller* xhc;
 
@@ -103,6 +118,7 @@ extern "C" void KernelMainNewStack(
   usb::xhci::Initialize();
 
   InitializeLayer();
+  InitializeMainWindow();
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
@@ -136,24 +152,13 @@ extern "C" void KernelMainNewStack(
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
   mouse_position = {200, 200};
 
-  auto main_window = std::make_shared<Window>(
-    160, 52, frame_buffer_config.pixel_format
-  );
-  DrawWindow(*main_window->Writer(), "Hello Window");
-
 
 
   mouse_layer_id = layer_manager->NewLayer()
     .SetWindow(mouse_window)
     .Move(mouse_position)
     .ID();
-  auto main_window_layer_id = layer_manager->NewLayer()
-    .SetWindow(main_window)
-    .SetDraggable(true)
-    .Move({200, 100})
-    .ID();
   
-  layer_manager->UpDown(main_window_layer_id, 2);
   layer_manager->UpDown(mouse_layer_id, 3);
   layer_manager->Draw(bglayer_id);
 
