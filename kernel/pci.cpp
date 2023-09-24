@@ -1,6 +1,6 @@
 #include "pci.hpp"
 #include "asmfunc.hpp"
-
+#include "logger.hpp"
 
 namespace { // NOTE: 無名namespace. ファイルスコープ内でのみ有効な変数・関数を宣言
   using namespace pci;
@@ -310,3 +310,19 @@ namespace pci{
     return ConfigureMSI(dev, msg_addr, msg_data, num_vector_exponent);
   }
 } 
+
+
+void InitializePCI() {
+  if (auto err = pci::ScanAllBus()) {
+    Log(kError, "ScanAllBus: %s\n", err.Name());
+    exit(1);
+  }
+
+  for (int i=0;i<pci::num_device;i++) {
+    const auto& dev = pci::devices[i];
+    auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
+    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
+
+    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n", dev.bus, dev.device, dev.function, vendor_id, class_code, dev.header_type);
+  }
+}

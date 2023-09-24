@@ -115,3 +115,4 @@ namespace pci {
   } __attribute__((packed));
 }
 
+void InitializePCI();

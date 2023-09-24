@@ -127,6 +127,7 @@ extern "C" void KernelMainNewStack(
 
   InitializeSegmentation();
   InitializePaging();
+  InitializePCI();
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
@@ -137,19 +138,6 @@ extern "C" void KernelMainNewStack(
 
 
   SetupIdentityPageTable();
-
-  
-
-  auto err = pci::ScanAllBus();
-  printk("ScanAllBus: %s\n", err.Name());
-
-  for (int i=0;i<pci::num_device;i++) {
-    const auto& dev = pci::devices[i];
-    auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
-    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-
-    printk("%d.%d.%d: vend %04x, class %08x, head %02x\n", dev.bus, dev.device, dev.function, vendor_id, class_code, dev.header_type);
-  }
 
   pci::Device* xhc_dev = nullptr;
   for (int i=0;i<pci::num_device;i++) {
