@@ -124,6 +124,8 @@ extern "C" void KernelMainNewStack(
   InitializeConsole();
 
   SetLogLevel(kWarn);
+
+  InitializeSegmentation();
   InitializePaging();
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
@@ -133,12 +135,7 @@ extern "C" void KernelMainNewStack(
 
   InitializeLAPICTimer();
 
-  SetupSegments(); 
 
-  const uint16_t kernel_cs = 1 << 3;
-  const uint16_t kernel_ss = 2 << 3;
-  SetDSAll(0);
-  SetCSSS(kernel_cs, kernel_ss);
   SetupIdentityPageTable();
 
   
