@@ -18,6 +18,17 @@ PixelWriter* screen_writer;
 namespace {
   char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 }
+
+FrameBufferConfig screen_config;
+PixelWriter* screen_writer;
+
+Vector2D<int> ScreenSize() {
+  return {
+    static_cast<int>(screen_config.horizontal_resolution),
+    static_cast<int>(screen_config.vertical_resolution)
+  };
+}
+
 void InitializeGraphics(const FrameBufferConfig& config) {
   ::screen_config = config;
 

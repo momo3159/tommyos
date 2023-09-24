@@ -125,6 +125,11 @@ class RGBResv8BitPerColorPixelWriter : public FrameBufferWriter {
 
 extern FrameBufferConfig screen_config;
 extern PixelWriter* screen_writer;
+
+extern FrameBufferConfig screen_config;
+extern PixelWriter* screen_writer;
+Vector2D<int> ScreenSize();
+
 void InitializeGraphics(const FrameBufferConfig &config);
 
 void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c); 

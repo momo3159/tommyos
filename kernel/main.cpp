@@ -102,6 +102,7 @@ extern "C" void KernelMainNewStack(
   InitializePCI();
   usb::xhci::Initialize();
 
+  InitializeLayer();
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
@@ -124,21 +125,9 @@ extern "C" void KernelMainNewStack(
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
 
-  FrameBuffer screen;
-  if (auto err = screen.Initialize(frame_buffer_config)) {
-    Log(kError, "failed to initialize frame buffer: %s at %s:%d\n", 
-      err.Name(), err.File(), err.Line()
-    );
-  }
 
-  screen_size.x = frame_buffer_config.horizontal_resolution; 
-  screen_size.y = frame_buffer_config.vertical_resolution;
 
-  layer_manager = new LayerManager;
-  layer_manager->SetWriter(&screen);
   
-  auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, frame_buffer_config.pixel_format);
-  DrawDesktop(*bgwindow->Writer());
   
   auto mouse_window = std::make_shared<Window>(
     kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format
@@ -152,20 +141,7 @@ extern "C" void KernelMainNewStack(
   );
   DrawWindow(*main_window->Writer(), "Hello Window");
 
-  auto console_window = std::make_shared<Window>(
-    Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format
-  );
-  console->SetWindow(console_window);
 
-  auto bglayer_id = layer_manager->NewLayer()
-    .SetWindow(bgwindow)
-    .Move({0, 0})
-    .ID();
-  console->SetLayerID(layer_manager->NewLayer()
-    .SetWindow(console_window)
-    .Move({0, 0})
-    .ID()
-  );
 
   mouse_layer_id = layer_manager->NewLayer()
     .SetWindow(mouse_window)
@@ -177,8 +153,6 @@ extern "C" void KernelMainNewStack(
     .Move({200, 100})
     .ID();
   
-  layer_manager->UpDown(bglayer_id, 0);
-  layer_manager->UpDown(console->LayerID(), 1);
   layer_manager->UpDown(main_window_layer_id, 2);
   layer_manager->UpDown(mouse_layer_id, 3);
   layer_manager->Draw(bglayer_id);
