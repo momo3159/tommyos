@@ -119,7 +119,7 @@ extern "C" void KernelMainNewStack(
   InitializeLAPICTimer();
 
 
-  SetupIdentityPageTable();
+
   const uint16_t cs = GetCS();
   SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0), reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
   LoadIDT(sizeof(idt)-1, reinterpret_cast<uintptr_t>(&idt[0]));
