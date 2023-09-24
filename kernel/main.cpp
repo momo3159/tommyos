@@ -69,7 +69,7 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
   if (!previous_left_pressed && left_pressed) {
     // 左ボタンを押したとき
     auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
-    if (layer) {
+    if (layer && layer->IsDraggable()) {
       mouse_drag_layer_id = layer->ID();
     }
   } else if (previous_left_pressed && left_pressed) {
@@ -340,6 +340,7 @@ extern "C" void KernelMainNewStack(
     .ID();
   auto main_window_layer_id = layer_manager->NewLayer()
     .SetWindow(main_window)
+    .SetDraggable(true)
     .Move({200, 100})
     .ID();
   
