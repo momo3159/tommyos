@@ -26,9 +26,6 @@
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
 
-char memory_manager_buf[sizeof(BitmapMemoryManager)];
-BitmapMemoryManager* memory_manager;
-
 int printk(const char* format, ...) {
   va_list ap;
   int result;
@@ -127,6 +124,7 @@ extern "C" void KernelMainNewStack(
   InitializeConsole();
 
   SetLogLevel(kWarn);
+  InitializePaging();
 
   // レイヤの準備が完了する前にもコンソールにログを表示したい
   // そのためまずはフレームバッファに直接書き込み、
@@ -143,55 +141,7 @@ extern "C" void KernelMainNewStack(
   SetCSSS(kernel_cs, kernel_ss);
   SetupIdentityPageTable();
 
-  ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
-  const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
   
-  uintptr_t available_end = 0;
-  for (
-    uintptr_t iter = memory_map_base;
-    iter < memory_map_base + memory_map.map_size;
-    iter += memory_map.descriptor_size
-  ) {
-    /**
-      desc->physical_start がページ境界でないときのために必要。
-      例）desc->physical_start == 0x0, desc->number_of_pages == 1のとき
-        使用領域はページ0, 1となるが、MarkAllocatedではページ0しかマークされない
-        そのため、次のディスクリプタのphysical_startより前の領域をすべて使用済みとする。
-      ```
-      memory_manager->MarkAllocated(
-        FrameID{available_end / kBytesPerFrame},
-        (desc->physical_start- available_end) / kBytesPerFrame
-      );
-      ```
-     * 
-     * available_end・・・最後の未使用領域の末尾のアドレス
-     * 
-    */
-    auto desc = reinterpret_cast<const MemoryDescriptor*>(iter);
-    if (available_end < desc->physical_start) {
-      memory_manager->MarkAllocated(
-        FrameID{available_end / kBytesPerFrame},
-        (desc->physical_start- available_end) / kBytesPerFrame
-      );
-    }
-    
-    const auto physical_end = 
-      desc->physical_start + desc->number_of_pages * kUEFIPageSize;
-
-    if (IsAvailable(static_cast<MemoryType>(desc->type))) {
-      available_end = physical_end;
-    } else {
-      memory_manager->MarkAllocated(
-        FrameID{desc->physical_start / kBytesPerFrame},
-        desc->number_of_pages * kUEFIPageSize / kBytesPerFrame
-      );
-    }
-  }
-  memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
-  if (auto err = InitializeHeap(*memory_manager)) {
-    Log(kError, "failed to allocate pages: %s at %s:%d\n", err.Name(), err.File(), err.Line());
-    exit(1);
-  }
 
   auto err = pci::ScanAllBus();
   printk("ScanAllBus: %s\n", err.Name());
