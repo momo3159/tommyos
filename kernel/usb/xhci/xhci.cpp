@@ -560,7 +560,7 @@ namespace usb::xhci {
     const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
     Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
 
-    usb::xhci::Controller xhc{xhc_mmio_base}; // NOTE: ホストコントローラを制御する機能を持つクラス
+    usb::xhci::controller = new Controller{xhc_mmio_base}; // NOTE: ホストコントローラを制御する機能を持つクラス
     Controller& xhc = *usb::xhci::controller;
 
     if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
@@ -595,7 +595,9 @@ namespace usb::xhci {
 
   void ProcessEvents() {
     while (controller->PrimaryEventRing()->HasFront()) {
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+      if (auto err = ProcessEvent(*controller)) {
+        Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+      }
     }
   }
 }

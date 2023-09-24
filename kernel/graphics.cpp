@@ -12,8 +12,6 @@ void RGBResv8BitPerColorPixelWriter::Write(Vector2D<int> pos, const PixelColor& 
   p[0] = c.r; p[1] = c.g; p[2] = c.b;
 }
 
-FrameBufferConfig screen_config;
-PixelWriter* screen_writer;
 
 namespace {
   char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
@@ -32,14 +30,14 @@ Vector2D<int> ScreenSize() {
 void InitializeGraphics(const FrameBufferConfig& config) {
   ::screen_config = config;
 
-  switch (frame_buffer_config.pixel_format) {
+  switch (screen_config.pixel_format) {
     case kPixelBGRResv8BitPerColor:
-      ::pixel_writer = new(pixel_writer_buf)
-        BGRResv8BitPerColorPixelWriter{frame_buffer_config};
+      ::screen_writer = new(pixel_writer_buf)
+        BGRResv8BitPerColorPixelWriter{screen_config};
       break;
     case kPixelRGBResv8BitPerColor:
-      ::pixel_writer = new(pixel_writer_buf)
-        RGBResv8BitPerColorPixelWriter{frame_buffer_config};
+      ::screen_writer = new(pixel_writer_buf)
+        RGBResv8BitPerColorPixelWriter{screen_config};
       break;
     default:
       exit(1);

@@ -125,9 +125,6 @@ class RGBResv8BitPerColorPixelWriter : public FrameBufferWriter {
 
 extern FrameBufferConfig screen_config;
 extern PixelWriter* screen_writer;
-
-extern FrameBufferConfig screen_config;
-extern PixelWriter* screen_writer;
 Vector2D<int> ScreenSize();
 
 void InitializeGraphics(const FrameBufferConfig &config);

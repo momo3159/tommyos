@@ -14,7 +14,6 @@
 #include "mouse.hpp"
 #include "interrupt.hpp"
 #include "asmfunc.hpp"
-#include "queue.hpp"
 #include "memory_map.hpp"
 #include "segment.hpp"
 #include "paging.hpp"
@@ -23,11 +22,7 @@
 #include "layer.hpp"
 #include "timer.hpp"
 #include "message.hpp"
-#include "usb/memory.hpp"
-#include "usb/device.hpp"
-#include "usb/classdriver/mouse.hpp"
 #include "usb/xhci/xhci.hpp"
-#include "usb/xhci/trb.hpp"
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -43,14 +38,15 @@ int printk(const char* format, ...) {
 }
 
 
-
+std::shared_ptr<Window> main_window;
+unsigned int main_window_layer_id;
 void InitializeMainWindow() {
-  auto main_window = std::make_shared<Window>(
+  main_window = std::make_shared<Window>(
     160, 52, screen_config.pixel_format
   );
   DrawWindow(*main_window->Writer(), "Hello Window");
 
-  auto main_window_layer_id = layer_manager->NewLayer()
+  main_window_layer_id = layer_manager->NewLayer()
     .SetWindow(main_window)
     .SetDraggable(true)
     .Move({200, 100})
@@ -70,7 +66,7 @@ extern "C" void KernelMainNewStack(
   const MemoryMap& memory_map_ref
 ) {
   MemoryMap memory_map{memory_map_ref};
-
+  
   InitializeGraphics(frame_buffer_config_ref);
   InitializeConsole();
 
@@ -78,6 +74,7 @@ extern "C" void KernelMainNewStack(
 
   InitializeSegmentation();
   InitializePaging();
+  InitializeMemoryManager(memory_map);
   ::main_queue = new std::deque<Message>(32);
   InitializeInterrupt(main_queue);
   InitializePCI();
@@ -87,30 +84,7 @@ extern "C" void KernelMainNewStack(
   InitializeMainWindow();
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
-
-  // レイヤの準備が完了する前にもコンソールにログを表示したい
-  // そのためまずはフレームバッファに直接書き込み、
-  // LayerManagerの準備が終わったタイミングで切り替える
-  DrawDesktop(*pixel_writer);
-
-  InitializeLAPICTimer();
-
-
-
-  const uint16_t cs = GetCS();
-
-  ::xhc = &xhc;
-  __asm__("sti");
-
   
-  std::array<Message, 32> main_queue_data;
-  ArrayQueue<Message> main_queue{main_queue_data};
-  ::main_queue = &main_queue; // https://rainbow-engine.com/cpp-scope-operator/
-
-
-
-  
-
   char str[128];
   unsigned int count = 0;
 
@@ -122,32 +96,23 @@ extern "C" void KernelMainNewStack(
     layer_manager->Draw(main_window_layer_id);
 
     __asm__("cli");
-    if (main_queue.Count() == 0) {
+    if (main_queue->size() == 0) {
       __asm__("sti");
       continue;
     }
 
-    Message msg = main_queue.Front();
-    main_queue.Pop();
+    Message msg = main_queue->front();
+    main_queue->pop_front();
     __asm__("sti");
 
     switch (msg.type) {
     case Message::kInterruptXHCI:
-      while (xhc.PrimaryEventRing()->HasFront()) {
-        if (auto err = ProcessEvent(xhc)) {
-          Log(kError, "Error while ProcessEvent: %s at %s:%d\n", 
-          err.Name(), err.File(), err.Line());
-        }
-      }
-      break;
-    
+      usb::xhci::ProcessEvents();
+      break; 
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
-      break;
     }
   }
-
-  while(1) __asm__("hlt");
 }
 
 
