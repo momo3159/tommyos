@@ -52,12 +52,37 @@ int printk(const char* format, ...) {
 unsigned int mouse_layer_id;
 Vector2D<int> screen_size;
 Vector2D<int> mouse_position;
-void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
+void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
+  static unsigned int mouse_drag_layer_id = 0;
+  static uint8_t previous_buttons = 0;
 
+  const auto oldpos = mouse_position;
+  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
   newpos = ElementMin(newpos, screen_size + Vector2D<int>{-16, -24});
   mouse_position = ElementMax(newpos, {0, 0});
+
+  const auto pos_diff = mouse_position - oldpos;
   layer_manager->Move(mouse_layer_id, mouse_position);
+
+  const bool previous_left_pressed = (previous_buttons & 0x01);
+  const bool left_pressed = (buttons & 0x01);
+  if (!previous_left_pressed && left_pressed) {
+    // 左ボタンを押したとき
+    auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
+    if (layer) {
+      mouse_drag_layer_id = layer->ID();
+    }
+  } else if (previous_left_pressed && left_pressed) {
+    // 左ボタンを押し続けているとき
+    if (mouse_drag_layer_id > 0) {
+      layer_manager->MoveRelative(mouse_drag_layer_id, pos_diff);
+    }
+  } else if (previous_left_pressed && !left_pressed) {
+    // 左ボタンを離したとき
+    mouse_drag_layer_id = 0;
+  }
+
+  previous_buttons = buttons;
 }
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {

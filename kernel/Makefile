@@ -1,7 +1,7 @@
-TARGET = kernel.elf 
+TARGET = kernel.elf
 OBJS = main.o graphics.o mouse.o font.o hankaku.o newlib_support.o console.o \
        pci.o asmfunc.o libcxx_support.o logger.o interrupt.o segment.o paging.o memory_manager.o \
-			 window.o layer.o timer.o frame_buffer.o \
+       window.o layer.o timer.o frame_buffer.o \
        usb/memory.o usb/device.o usb/xhci/ring.o usb/xhci/trb.o usb/xhci/xhci.o \
        usb/xhci/port.o usb/xhci/device.o usb/xhci/devmgr.o usb/xhci/registers.o \
        usb/classdriver/base.o usb/classdriver/hid.o usb/classdriver/keyboard.o \
@@ -9,23 +9,23 @@ OBJS = main.o graphics.o mouse.o font.o hankaku.o newlib_support.o console.o \
 DEPENDS = $(join $(dir $(OBJS)),$(addprefix .,$(notdir $(OBJS:.o=.d))))
 
 CPPFLAGS += -I.
-CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone -fno-exceptions -fno-rtti -std=c++17 
-LDFLAGS += --entry KernelMain -z norelro --image-base 0x100000 --static
+CFLAGS   += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone
+CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone \
+            -fno-exceptions -fno-rtti -std=c++17
+LDFLAGS  += --entry KernelMain -z norelro --image-base 0x100000 --static
 
-# .PHONYは疑似ターゲットで、必須項目が本当のファイル名ではないことを表す
-# make all とすると、all: $(TARGET)→kernel.elfをターゲットするレシピが動く。
-.PHONY: all 
+
+.PHONY: all
 all: $(TARGET)
 
 .PHONY: clean
 clean:
-	rm -rf *.o 
+	rm -rf *.o
 
-# ターゲット、ターゲットを生成するのに必要な項目、ターゲットを生成するレシピ
-kernel.elf: $(OBJS) Makefile 
+kernel.elf: $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o kernel.elf $(OBJS) -lc -lc++ -lc++abi
 
-%.o: %.cpp Makefile 
+%.o: %.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 .%.d: %.cpp
