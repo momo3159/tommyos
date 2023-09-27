@@ -383,7 +383,7 @@ EFI_STATUS EFIAPI UefiMain(
 
   typedef void EntryPointType(
     const struct FrameBufferConfig*, 
-    const struct MemoryMap*
+    const struct MemoryMap*,
     const VOID*
   );
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
