@@ -3,6 +3,8 @@
 #include <cstddef>
 
 namespace acpi {
+  const int kPMTimerFreq = 3579545;
+
   struct RSDP {
     char signature[8];
     uint8_t checksum;
@@ -48,6 +50,8 @@ namespace acpi {
   } __attribute__((packed));
 
   extern const FADT* fadt;
-  
+
   void Initialize(const RSDP& rsdp);
+
+  void WaitMiliseconds(unsigned long msed);
 }

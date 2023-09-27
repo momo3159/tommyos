@@ -3,6 +3,7 @@
 #include "acpi.hpp"
 #include "error.hpp"
 #include "logger.hpp"
+#include "asmfunc.hpp"
 
 namespace {
   template <typename T>
@@ -94,5 +95,21 @@ namespace acpi {
       Log(kError, "FADT is not found\n");
       exit(1);
     }
+  }
+
+  void WaitMiliseconds(unsigned long msec) {
+    const bool is_pm_timer_32 = (fadt->flags >> 8) & 1; // 32 or 24bit
+    const uint32_t start = IoIn32(fadt->pm_tmr_blk);
+
+    uint32_t end = start + kPMTimerFreq * msec / 1000;
+    if (!is_pm_timer_32) {
+      end &= 0x00ffffffu;
+    }
+
+    if (end < start) {
+      while (IoIn32(fadt->pm_tmr_blk) >= start);
+    }
+
+    while (IoIn32(fadt->pm_tmr_blk) < end);
   }
 }
