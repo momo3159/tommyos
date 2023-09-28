@@ -60,11 +60,14 @@ void InitializeMainWindow() {
 std::shared_ptr<Window> text_window;
 unsigned int text_window_layer_id;
 void InitializeTextWindow() {
+  const int win_w = 160;
+  const int win_h = 52;
+
   text_window = std::make_shared<Window>(
-    160, 52, screen_config.pixel_format
+    win_w, win_h, screen_config.pixel_format
   );
   DrawWindow(*text_window->Writer(), "Text Box");
-  DrawTextbox(*text_window->Writer(), {4, 24}, {160 - 8, 52 - 24 - 4});
+  DrawTextbox(*text_window->Writer(), {4, 24}, {win_w - 8, win_h - 24 - 4});
 
   text_window_layer_id = layer_manager->NewLayer()
     .SetWindow(text_window)
@@ -76,17 +79,27 @@ void InitializeTextWindow() {
 }
 
 int current_index = 0;
+void DrawTextCursor(bool visible) {
+  const auto color = visible ? ToColor(0) : ToColor(0xffffff);
+  const auto pos = Vector2D<int>{current_index * 8 + 8, 24 + 5};
+  FillRectangle(*text_window->Writer(), pos, {7, 15}, color);
+}
+
 void InputTextWindow(char c) {
-  const auto max_chars = (text_window->Width() - 16) / 8;
+  const auto max_chars = (text_window->Width() - 16) / 8 - 1;
   auto pos = []() { return Vector2D<int>{8 + 8*current_index, 24 + 6}; };
 
   if (c == 0) return;
   else if (c == 0x08 && 0 < current_index) {
+    DrawTextCursor(false);
     current_index--;
     FillRectangle(*text_window->Writer(), pos(), Vector2D<int>{8, 16}, ToColor(0xffffff));
+    DrawTextCursor(true);
   } else if (c >= ' ' && current_index < max_chars) {
+    DrawTextCursor(false);
     WriteAscii(*text_window->Writer(), pos(), c, ToColor(0));
     current_index++;
+    DrawTextCursor(true);
   }
 
   layer_manager->Draw(text_window_layer_id);
@@ -127,22 +140,18 @@ extern "C" void KernelMainNewStack(
   acpi::Initialize(acpi_table);
 
   InitializeLAPICTimer(*main_queue);
-  // timer_manager->AddTimer(Timer(200, 2));
-  // timer_manager->AddTimer(Timer(600, -1));
 
+  const int kTextboxCursorTimer = 1;
+  const int kTimer05sec = static_cast<int>(kTimerFreq * 0.5);
+  __asm__("cli");
+  timer_manager->AddTimer(Timer(kTimer05sec, kTextboxCursorTimer));
+  __asm__("sti");
+
+  bool textbox_cursor_visible = false;
   InitializeKeyboard(*main_queue);
   char str[128];
 
   while (true) {
-    __asm__("cli");
-    const auto tick = timer_manager->CurrentTick();
-    __asm__("sti");
-
-    sprintf(str, "%010lu", tick);
-
-    FillRectangle(*main_window->Writer(), {24, 28}, {8*10, 16}, {0xc6, 0xc6, 0xc6});
-    WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
-    layer_manager->Draw(main_window_layer_id);
 
     __asm__("cli");
     if (main_queue->size() == 0) {
@@ -159,6 +168,16 @@ extern "C" void KernelMainNewStack(
       usb::xhci::ProcessEvents();
       break; 
     case Message::kTimerTimeout:
+      if (msg.arg.timer.value == kTextboxCursorTimer) {
+        __asm__("cli");
+        timer_manager->AddTimer(
+          Timer{msg.arg.timer.timeout + kTimer05sec, kTextboxCursorTimer}
+        );
+        __asm__("sti");
+        textbox_cursor_visible = !textbox_cursor_visible;
+        DrawTextCursor(textbox_cursor_visible);
+        layer_manager->Draw(text_window_layer_id);
+      }
       break;
     case Message::kKeyPush:
       if (msg.arg.keyboard.ascii != 0) {
