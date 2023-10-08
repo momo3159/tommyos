@@ -61,4 +61,4 @@ constexpr InterruptDescriptorAttribute MakeIDTAttr(
 void NotifyEndOfInterrupt();
 void SetIDTEntry(InterruptDescriptor& desc, InterruptDescriptorAttribute attr, uint64_t offest, uint16_t segment_selector);
 
-void InitializeInterrupt(std::deque<Message>* msg_queue);
+void InitializeInterrupt();
