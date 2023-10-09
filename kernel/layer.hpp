@@ -62,6 +62,7 @@ class LayerManager {
 };
 
 extern LayerManager* layer_manager;
+extern std::map<unsigned int, uint64_t>* layer_task_map;
 
 class ActiveLayer {
   public:
