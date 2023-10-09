@@ -1,4 +1,5 @@
 #include "terminal.hpp"
+#include <cstring>
 #include "logger.hpp"
 #include "font.hpp"
 #include "pci.hpp"
@@ -19,6 +20,7 @@ Terminal::Terminal() {
     .ID();
 
   Print(">");
+  cmd_history_.resize(8);
 }
 
 Rectangle<int> Terminal::BlinkCursor() {
@@ -122,7 +124,12 @@ Rectangle<int> Terminal::InputKey(
 
     if (ascii == '\n') {
       linebuf_[linebuf_index_] = 0;
+      if (linebuf_index_ > 0) {
+        cmd_history_.pop_back();
+        cmd_history_.push_front(linebuf_);
+      }
       linebuf_index_ = 0;
+      cmd_history_index_ = -1;
 
       cursor_.x = 0;
       Log(kWarn, "line: %s\n", &linebuf_[0]);
@@ -146,6 +153,10 @@ Rectangle<int> Terminal::InputKey(
           --linebuf_index_;
         }
       }
+    } else if (keycode == 0x51) {
+      draw_area = HistoryUpDown(-1);
+    } else if (keycode == 0x52) {
+      draw_area = HistoryUpDown(1);
     } else if (ascii != 0) {
       if (cursor_.x < kColumns - 1 && linebuf_index_ < kLineMax -1) {
         linebuf_[linebuf_index_] = ascii;
@@ -201,4 +212,30 @@ void Terminal::ExecuteLine() {
     Print(command);
     Print("\n");
   }
+}
+
+Rectangle<int> Terminal::HistoryUpDown(int direction) {
+  if (direction == -1 && cmd_history_index_ >= 0) {
+    --cmd_history_index_;
+  } else if (direction == 1 && cmd_history_index_ + 1 < cmd_history_.size()) {
+    ++cmd_history_index_;
+  }
+
+  cursor_.x = 1;
+
+  const auto first_pos = CalcCursorPos();
+  Rectangle<int> draw_area{first_pos, {8*(kColumns-1), 16}};
+  FillRectangle(*window_->Writer(), draw_area.pos, draw_area.size, {0, 0,  0});
+
+  const char* history = "";
+  if (cmd_history_index_ >= 0) {
+    history = &cmd_history_[cmd_history_index_][0];
+  }
+
+  strcpy(&linebuf_[0], history);
+  linebuf_index_ = strlen(history);
+
+  WriteString(*window_->Writer(), first_pos, history, {255, 255, 255});
+  cursor_.x = linebuf_index_ + 1;
+  return draw_area;
 }

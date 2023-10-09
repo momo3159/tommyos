@@ -13,8 +13,7 @@ class Terminal {
     unsigned int LayerID() const { return layer_id_; }
     Rectangle<int> BlinkCursor();
     Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
-    void Print(const char* s);
-    void ExecuteLine();
+    
   private:
     std::shared_ptr<ToplevelWindow> window_;
     unsigned int layer_id_;
@@ -26,7 +25,12 @@ class Terminal {
 
     int linebuf_index_{0};
     std::array<char, kLineMax> linebuf_{};
+    int cmd_history_index_{-1};
+    std::deque<std::array<char, kLineMax>> cmd_history_{};
     void Scroll1();
+    void Print(const char* s);
+    void ExecuteLine();
+    Rectangle<int> HistoryUpDown(int direction);
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
