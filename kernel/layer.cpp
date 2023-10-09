@@ -58,26 +58,6 @@ Layer& LayerManager::NewLayer() {
   ++latest_id_;
   return *layers_.emplace_back(new Layer{latest_id_});
 }
-
-void LayerManager::Draw(const unsigned int id) const {
-  // idとそれより上のレイヤーを描画する。
-  bool draw = false;
-  Rectangle<int> window_area;
-
-  for (auto layer : layer_stack_) {
-    if (layer->ID() == id) {
-      window_area.size = layer->GetWindow()->Size();
-      window_area.pos  = layer->GetPosition();
-      draw = true;
-    }
-    if (draw) {
-      layer->DrawTo(back_buffer_, window_area);
-    }
-  }
-
-  screen_->Copy(window_area.pos, back_buffer_, window_area);
-}
-
 void LayerManager::Draw(const Rectangle<int>& area) const {
   // 最下層からareaの部分を描画する
   for (auto layer : layer_stack_) {
@@ -86,6 +66,32 @@ void LayerManager::Draw(const Rectangle<int>& area) const {
 
   screen_->Copy(area.pos, back_buffer_, area);
 }
+void LayerManager::Draw(unsigned int id, Rectangle<int> area) const {
+  bool draw = false;
+  Rectangle<int> window_area;
+
+  for (auto layer : layer_stack_) {
+    if (layer->ID() == id) {
+      window_area.size = layer->GetWindow()->Size();
+      window_area.pos = layer->GetPosition();
+      if (area.size.x >= 0 || area.size.y >= 0) {
+        area.pos = area.pos + window_area.pos;
+        window_area = window_area & area;
+      }
+      draw = true;
+    }
+    if (draw) {
+      layer->DrawTo(back_buffer_, window_area);
+    }
+  }
+  screen_->Copy(window_area.pos, back_buffer_, window_area);
+}
+void LayerManager::Draw(unsigned int id) const {
+  // idとそれより上のレイヤーを描画する。
+  Draw(id, {{0, 0}, {-1, -1}}); 
+}
+
+
 
 void LayerManager::Move(unsigned int id, Vector2D<int> new_position) {
   auto layer = FindLayer(id);
@@ -264,6 +270,9 @@ void ProcessLayerMessage(const Message& msg) {
       break;
     case LayerOperation::Draw:
       layer_manager->Draw(arg.layer_id);
+      break;
+    case LayerOperation::DrawArea:
+      layer_manager->Draw(arg.layer_id, {{arg.x, arg.y}, {arg.w, arg.h}});
       break;
   }
 }
