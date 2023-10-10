@@ -3,6 +3,7 @@
 #include "logger.hpp"
 #include "font.hpp"
 #include "pci.hpp"
+#include "fat.hpp"
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
@@ -207,6 +208,29 @@ void Terminal::ExecuteLine() {
       );
       Print(s);
     }
+  } else if (strcmp(command, "ls") == 0) {
+    auto root_dir_entries = fat::GetSectorByCluster<fat::DirectoryEntry>(
+      fat::boot_volume_image->root_cluster
+    );
+    auto entries_per_cluster = fat::boot_volume_image->bytes_per_sector / sizeof(fat::DirectoryEntry)
+      * fat::boot_volume_image->sector_per_cluster;
+    
+    char base[9], ext[4], s[64];
+    for (int i=0;i<entries_per_cluster;i++) {
+      ReadName(root_dir_entries[i], base, ext);
+      if (base[0] == 0x00) break;
+      else if (static_cast<uint8_t>(base[0]) == 0xe5) continue;
+      else if (root_dir_entries[i].dir_attr == fat::Attribute::kLongName) {
+        continue;
+      }
+
+      if (ext[0]) sprintf(s, "%s.%s\n", base, ext);
+      else sprintf(s, "%s\n", base);
+
+      Print(s);
+    }
+
+    
   } else if (command[0] != 0) {
     Print("no such command: ");
     Print(command);
