@@ -28,6 +28,7 @@ class Terminal {
     int cmd_history_index_{-1};
     std::deque<std::array<char, kLineMax>> cmd_history_{};
     void Scroll1();
+    void Print(char c);
     void Print(const char* s);
     void ExecuteLine();
     Rectangle<int> HistoryUpDown(int direction);

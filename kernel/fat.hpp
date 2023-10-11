@@ -67,10 +67,15 @@ namespace fat {
   void Initialize(void* volume_image);
   void ReadName(const DirectoryEntry& entry, char* base, char* ext);
   extern BPB* boot_volume_image;
-
+  extern unsigned long bytes_per_cluster;
 
   template <class T>
   T* GetSectorByCluster(unsigned long cluster) {
     return reinterpret_cast<T*>(GetClusterAddr(cluster));
   }
+  
+  unsigned long NextCluster(unsigned long cluster);
+  DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster = 0);
+
+  static const unsigned long kEndOfClusterchain = 0xffffffflu;
 }
