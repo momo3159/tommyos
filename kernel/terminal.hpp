@@ -33,7 +33,7 @@ class Terminal {
     void Print(const char* s);
     void ExecuteLine();
     Rectangle<int> HistoryUpDown(int direction);
-    void ExecuteFile(const fat::DirectoryEntry& file_entry);
+    void ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* fisrt_arg);
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
