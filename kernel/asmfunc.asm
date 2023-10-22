@@ -84,6 +84,19 @@ SetCSSS:
   pop rbp 
   ret
 
+global CallApp ; void CallApp(int argc, char** cargv, uint16_t cs, uint16_t cs, uint16_t ss, unit64_t rip, uint64_t rsp);
+; far return では スタックから値を取り出してCSとRIPに設定する
+; 加えて、DPLが今より大きいコードセグメントへfar return する場合、SSとRSPも取り出し設定される
+; CS の Index 部分が3であれば、gdt[3]を指す→gdt[3]に設定されている権限でCPUが動作するようになる
+CallApp:
+  push rbp
+  mov rbp, rsp 
+  push rcx ; SS
+  push r9 ; RSP
+  push rdx ; CS
+  push r8 ; RIP
+  o64 retf
+
 global SetCR3 ; void SetCR3(uint64_t value)
 SetCR3:
   mov cr3, rdi 
