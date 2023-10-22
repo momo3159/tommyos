@@ -27,6 +27,8 @@ class Error {
       kNoPCIMSI,
       kUnknownPixelFormat,
       kNoSuchTask,
+      kInvalidFormat,
+      kFrameTooSmall,
       kLastOfCode,
     };
 
@@ -77,6 +79,8 @@ class Error {
       "kNoPCIMSI",
       "kUnknownPixelFormat",
       "kNoSuchTask",
+      "kInvalidFormat",
+      "kFrameTooSmall",
     };
     static_assert(Error::Code::kLastOfCode == code_names_.size());
 

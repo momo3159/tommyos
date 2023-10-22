@@ -1,6 +1,6 @@
 #pragma once 
 #include <cstdint>
-
+#include <cstddef>
 
 namespace fat {
   struct BPB {
@@ -73,9 +73,13 @@ namespace fat {
   T* GetSectorByCluster(unsigned long cluster) {
     return reinterpret_cast<T*>(GetClusterAddr(cluster));
   }
-  
+
+  bool NameIsEqual(const DirectoryEntry& entry, const char* name);  
+
   unsigned long NextCluster(unsigned long cluster);
   DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster = 0);
+
+  size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry);
 
   static const unsigned long kEndOfClusterchain = 0xffffffflu;
 }
