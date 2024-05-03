@@ -1,3 +1,7 @@
 *.efi
 *.img
 mnt
+*.csv
+*.elf
+*.o
+*.md
