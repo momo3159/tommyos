@@ -174,9 +174,15 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE* system_tab
     Print(L"failed to exit boot services: %r\n", status);
     while(1);
   }
+  
+  // ELF形式のファイルにはファイルの先頭から24バイトの位置にエントリーポイントのアドレスが書かれている
+  UINT64 entry_addr = *(UINT64*)(kernel_base_addr + 24); 
 
+  // 関数ポインタ型似キャストして実行 
+  typedef void EntryPointType(void);
+  EntryPointType* entry_point = (EntryPointType*)entry_addr;
+  entry_point();
   Print(L"All done\n");
-
   while (1);
   return EFI_SUCCESS;
 }
