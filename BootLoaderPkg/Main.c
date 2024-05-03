@@ -115,6 +115,22 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL* file) {
   return EFI_SUCCESS;
 }
 
+EFI_STATUS ExitBootServicesWithRetry(EFI_HANDLE image_handle, struct MemoryMap* memmap) {
+  EFI_STATUS status;
+  status = gBS->ExitBootServices(image_handle, memmap->map_key);
+  if(!EFI_ERROR(status)) return status;
+
+  // retry 
+  status = GetMemorymap(memmap);
+  if (EFI_ERROR(status)) {
+    Print(L"failed to get memory map: %r\n", status);
+    return status;
+  }
+
+  status = gBS->ExitBootServices(image_handle, memmap->map_key);
+  return status;
+}
+
 EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE* system_table) {
   Print(L"Hello World!\n");
 
@@ -151,6 +167,13 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE* system_tab
   gBS->AllocatePages(AllocateAddress, EfiLoaderData, (kernel_file_size + 0xfff) / 0x1000, &kernel_base_addr);
   kernel_file->Read(kernel_file, &kernel_file_size, (VOID*)kernel_base_addr);
   Print(L"kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
+
+  // ブートサービスを止める
+  EFI_STATUS status = ExitBootServicesWithRetry(image_handle, &memmap);
+  if (EFI_ERROR(status)) {
+    Print(L"failed to exit boot services: %r\n", status);
+    while(1);
+  }
 
   Print(L"All done\n");
 
