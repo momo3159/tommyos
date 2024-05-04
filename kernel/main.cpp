@@ -5,6 +5,47 @@ struct PixelColor {
   uint8_t r, g, b;
 };
 
+class PixelWriter {
+  public:
+    PixelWriter(const FrameBufferConfig& config) : config_{config} {} // コンストラクタ
+    virtual ~PixelWriter() = default; // デストラクタ
+    virtual void Write(int x, int y, const PixelColor& c) = 0; // 0 は純粋仮想関数を表す == 実装を持たない。
+
+  protected:
+    uint8_t* PixelAt(int x, int y) {
+      return config_.frame_buffer + 4 * (config_.pixels_per_scan_line * y + x);
+    }
+  
+  private:
+    const FrameBufferConfig& config_;
+};
+
+class BGRResv8BitPerColorPixelWriter : public PixelWriter {
+  public:
+    using PixelWriter::PixelWriter; // コンストラクタは親のものを使う
+    
+    virtual void Write(int x, int y, const PixelColor& c) override {
+      auto p = PixelAt(x, y);
+      p[0] = c.b; 
+      p[1] = c.g; 
+      p[2] = c.r;
+    }
+};
+
+class RGBResv8BitPerColorPixelWriter : public PixelWriter {
+  public:
+    using PixelWriter::PixelWriter; // コンストラクタは親のものを使う
+    
+    virtual void Write(int x, int y, const PixelColor& c) override {
+      auto p = PixelAt(x, y);
+      p[0] = c.r; 
+      p[1] = c.g; 
+      p[2] = c.b;
+    }
+};
+
+
+
 int WritePixel(const FrameBufferConfig& config, int x, int y, const PixelColor& c) {
   uint8_t* p = &config.frame_buffer[4 * (x + y * config.pixels_per_scan_line)];
   if (config.pixel_format == kPixelBGRResv8BitPerColor) {
