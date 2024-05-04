@@ -2,6 +2,25 @@
 #include <cstddef>
 #include "frame_buffer/frame_buffer_config.hpp"
 
+const uint8_t kFontA[16] = {
+  0b00000000, //________
+  0b00011000, //___**___
+  0b00011000, //___**___
+  0b00011000, //___**___
+  0b00011000, //___**___
+  0b00100100, //__*__*___
+  0b00100100, //__*__*__
+  0b00100100, //__*__*__
+  0b00100100, //__*__*__
+  0b01111110, //_******_
+  0b01000010, //_*____*_
+  0b01000010, //_*____*_
+  0b01000010, //_*____*_
+  0b11100111, //***__***_
+  0b00000000, //________
+  0b00000000, //________
+};
+
 // new 演算子の挙動
 // new の第一引数はコンパイラが勝手に埋めてくれる
 // メモリ確保したら実際にインスタンス生成をする
@@ -54,19 +73,16 @@ class RGBResv8BitPerColorPixelWriter : public PixelWriter {
     }
 };
 
+void WriteAscii(PixelWriter& writer, int x, int y, char c, const PixelColor& color) {
+  if (c != 'A') return;
 
-
-int WritePixel(const FrameBufferConfig& config, int x, int y, const PixelColor& c) {
-  uint8_t* p = &config.frame_buffer[4 * (x + y * config.pixels_per_scan_line)];
-  if (config.pixel_format == kPixelBGRResv8BitPerColor) {
-    p[0] = c.b; p[1] = c.g; p[2] = c.r;
-  } else if(config.pixel_format == kPixelRGBResv8BitPerColor) {
-    p[0] = c.r; p[1] = c.g; p[2] = c.b;
-  } else {
-    return -1;
+  for (int dx=0;dx<8;dx++) {
+    for (int dy=0;dy<16;dy++) {
+      if ((kFontA[dy] << dx) & 0x80u) {
+        writer.Write(x + dx, y + dy, color);
+      }
+    }
   }
-
-  return 0;
 }
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
@@ -93,6 +109,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       pixel_writer->Write(100 + x, 100 + y, {0, 255, 0});
     }
   }
+
+  WriteAscii(*pixel_writer, 50, 50, 'A', {0, 0, 0});
+  WriteAscii(*pixel_writer, 58, 50, 'A', {0, 250, 0});
   while (1) __asm__("hlt");
 }
 
