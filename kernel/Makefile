@@ -1,5 +1,5 @@
 TARGET = kernel.elf
-OBJS = main/main.o graphics/graphics.o font/font.o console/console.o hankaku.o newlib_support.o
+OBJS = main/main.o graphics/graphics.o font/font.o console/console.o pci/pci.o hankaku.o newlib_support.o
 DEPENDS = $(join $(dir $(OBJS)),$(addprefix .,$(notdir $(OBJS:.o=.d))))
 
 CFLAGS   += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone
@@ -33,6 +33,9 @@ console/console.o: console/console.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $<  -o $@
 
 graphics/graphics.o: graphics/graphics.cpp Makefile
+	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $<  -o $@
+
+pci/pci.o: pci/pci.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $<  -o $@
 
 main/main.o: main/main.cpp Makefile
