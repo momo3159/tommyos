@@ -22,4 +22,5 @@ newlib_support.o: newlib_support.c \
   /home/tomoya/osbook/devenv/x86_64-elf/include/sys/_timespec.h \
   /home/tomoya/osbook/devenv/x86_64-elf/include/sys/_pthreadtypes.h \
   /home/tomoya/osbook/devenv/x86_64-elf/include/sys/sched.h \
-  /home/tomoya/osbook/devenv/x86_64-elf/include/machine/types.h
+  /home/tomoya/osbook/devenv/x86_64-elf/include/machine/types.h \
+  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/errno.h
