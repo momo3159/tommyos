@@ -10,6 +10,23 @@ struct PixelColor {
   uint8_t r, g, b;
 };
 
+static const PixelColor BLACK = PixelColor{0, 0, 0};
+static const PixelColor WHITE = PixelColor{255, 255, 255};
+static const PixelColor BLUE  = PixelColor{45, 118, 237};
+static const PixelColor GLAY  = PixelColor{80, 80, 80};
+
+template <typename T>
+struct Vector2D {
+  T x, y;
+
+  template <typename U>
+  Vector2D<T>& operator +=(const Vector2D<U>& rhs) {
+    x += rhs.x;
+    y += rhs.y;
+    return *this;
+  }
+};
+
 class PixelWriter {
   public:
     PixelWriter(const FrameBufferConfig& config) : config_{config} {} // コンストラクタ
@@ -36,3 +53,6 @@ class RGBResv8BitPerColorPixelWriter : public PixelWriter {
     using PixelWriter::PixelWriter; // コンストラクタは親のものを使う
     virtual void Write(int x, int y, const PixelColor& c) override;
 };
+
+void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c);
+void DrawRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c);
