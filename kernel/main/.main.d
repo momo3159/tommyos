@@ -9,4 +9,5 @@ main/main.o: main/main.cpp \
   main/../frame_buffer/frame_buffer_config.hpp \
   main/../graphics/graphics.hpp \
   main/../graphics/../frame_buffer/frame_buffer_config.hpp \
-  main/../font/font.hpp main/../font/../graphics/graphics.hpp
+  main/../font/font.hpp main/../font/../graphics/graphics.hpp \
+  main/../console/console.hpp main/../console/../graphics/graphics.hpp
