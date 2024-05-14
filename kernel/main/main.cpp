@@ -6,6 +6,7 @@
 #include "../font/font.hpp"
 #include "../console/console.hpp"
 #include "../pci/pci.hpp"
+#include "../logger/logger.hpp"
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
@@ -60,6 +61,20 @@ const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
 const PixelColor kDesktopBGColor = BLUE;
 const PixelColor kDesktopFGColor = WHITE;
 
+pci::Device* lookupXHC() {
+  pci::Device* xhc_dev = nullptr;
+  for (int i=0;i<pci::num_device;i++) {
+    if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
+      xhc_dev = &pci::devices[i];
+      if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
+        break;
+      }
+    }
+  }
+
+  return xhc_dev;
+}
+
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   switch (frame_buffer_config.pixel_format) {
     case kPixelBGRResv8BitPerColor:
@@ -83,6 +98,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   }
 
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);
+  SetLogLevel(kWarn);
 
   const int kFrameWidth = frame_buffer_config.horizontal_resolution;
   const int kFrameHeight = frame_buffer_config.vertical_resolution;
@@ -105,15 +121,20 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   }
 
   auto err = pci::ScanAllBus();
-  printk("ScanAllBus: %s\n", err.Name());
+  Log(kDebug, "ScanAllBus: %s\n", err.Name());
 
   for (int i=0;i<pci::num_device;i++) {
     const auto& dev = pci::devices[i];
     auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
     auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    printk("%d.%d.%d: vend %04x, class %08x, head %02x\n",
+    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
         dev.bus, dev.device, dev.function,
         vendor_id, class_code, dev.header_type);
+  }
+
+  auto xhc_dev = lookupXHC();
+  if (xhc_dev) {
+    Log(kInfo, "xHC has been found: %d.%d.%d\n", xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
 
   printk("Welcome to tommyOS!\n");

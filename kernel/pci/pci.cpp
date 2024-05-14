@@ -34,10 +34,8 @@ namespace {
     }
 
     auto class_code = ReadClassCode(bus, device, function);
-    uint8_t base = (class_code >> 24) & 0xffu;
-    uint8_t sub = (class_code >> 16) & 0xffu;
 
-    if (base == 0x06u && sub == 0x04u) {
+    if (class_code.Match(0x06u, 0x04u)) {
       // PCI-PCI
       auto bus_numbers = ReadBusNumbers(bus, device, function);
       uint8_t secondary_bus = (bus_numbers >> 8) & 0xffu;
@@ -107,9 +105,15 @@ namespace pci {
   }
   
 
-  uint32_t ReadClassCode(uint8_t bus, uint8_t device, uint8_t function) {
+  ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function) {
     WriteAddress(MakeAddress(bus, device, function, 0x08));
-    return ReadData();
+    auto reg = ReadData();
+
+    ClassCode cc;
+    cc.base = (reg >> 24) & 0xffu;
+    cc.sub = (reg >> 16) & 0xffu;
+    cc.interface = (reg >> 8) & 0xffu;
+    return cc;
   }
 
   uint32_t ReadBusNumbers(uint8_t bus, uint8_t device, uint8_t function) {
