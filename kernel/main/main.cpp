@@ -6,7 +6,12 @@
 #include "../font/font.hpp"
 #include "../console/console.hpp"
 #include "../pci/pci.hpp"
-#include "../logger/logger.hpp"
+#include "../logger.hpp"
+#include "usb/memory.hpp"
+#include "usb/device.hpp"
+#include "usb/classdriver/mouse.hpp"
+#include "usb/xhci/xhci.hpp"
+#include "usb/xhci/trb.hpp"
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
@@ -137,7 +142,16 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     Log(kInfo, "xHC has been found: %d.%d.%d\n", xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
 
+  const Either<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
+  Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
+  const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
+  Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
+
+
   printk("Welcome to tommyOS!\n");
   while (1) __asm__("hlt");
 }
 
+extern "C" void __cxa_pure_virtual() {
+  while (1) __asm__("hlt");
+}

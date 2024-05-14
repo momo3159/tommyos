@@ -1,5 +1,7 @@
 #pragma once
+#include <cstdio>
 #include <array>
+
 
 class Error {
   public:
@@ -7,7 +9,23 @@ class Error {
       kSuccess,
       kFull,
       kEmpty,
+      kNoEnoughMemory,
       kIndexOutOfRange,
+      kHostControllerNotHalted,
+      kInvalidSlotID,
+      kPortNotConnected,
+      kInvalidEndpointNumber,
+      kTransferRingNotSet,
+      kAlreadyAllocated,
+      kNotImplemented,
+      kInvalidDescriptor,
+      kBufferTooSmall,
+      kUnknownDevice,
+      kNoCorrespondingSetupStage,
+      kTransferFailed,
+      kInvalidPhase,
+      kUnknownXHCISpeedID,
+      kNoWaiter,
       kLastOfCode,
     };
     
@@ -34,12 +52,29 @@ class Error {
     }
 
   private:
-    static constexpr std::array<const char*, 4> code_names_ = {
+    static constexpr std::array code_names_{
       "kSuccess",
       "kFull",
       "kEmpty",
+      "kNoEnoughMemory",
       "kIndexOutOfRange",
+      "kHostControllerNotHalted",
+      "kInvalidSlotID",
+      "kPortNotConnected",
+      "kInvalidEndpointNumber",
+      "kTransferRingNotSet",
+      "kAlreadyAllocated",
+      "kNotImplemented",
+      "kInvalidDescriptor",
+      "kBufferTooSmall",
+      "kUnknownDevice",
+      "kNoCorrespondingSetupStage",
+      "kTransferFailed",
+      "kInvalidPhase",
+      "kUnknownXHCISpeedID",
+      "kNoWaiter",
     };
+    static_assert(Error::Code::kLastOfCode == code_names_.size());
 
     Code code_;
     int line_;
