@@ -1,5 +1,5 @@
 TARGET = kernel.elf
-OBJS = main/main.o graphics/graphics.o font/font.o console/console.o pci/pci.o hankaku.o newlib_support.o
+OBJS = main/main.o graphics/graphics.o font/font.o console/console.o pci/pci.o hankaku.o newlib_support.o pci/asmfunc.o
 DEPENDS = $(join $(dir $(OBJS)),$(addprefix .,$(notdir $(OBJS:.o=.d))))
 
 CFLAGS   += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone
@@ -40,6 +40,9 @@ pci/pci.o: pci/pci.cpp Makefile
 
 main/main.o: main/main.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+pci/asmfunc.o: pci/asmfunc.asm Makefile
+	nasm -f elf64 -o $@ $<
 
 .%.d: %.c
 	clang $(CPPFLAGS) $(CFLAGS) -MM $< > $@
