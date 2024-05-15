@@ -18,10 +18,10 @@ namespace {
   }
 
   
-  Error AddDevice(uint8_t bus, uint8_t device, uint8_t function, uint8_t header_type) {
+  Error AddDevice(const Device& device) {
     if (num_device == devices.size()) return MAKE_ERROR(Error::kFull);
 
-    devices[num_device] = Device{bus, device, function, header_type};
+    devices[num_device] = device; 
     ++num_device;
     return MAKE_ERROR(Error::kSuccess);
   }
@@ -29,12 +29,12 @@ namespace {
   Error ScanBus(uint8_t bus);
 
   Error ScanFunction(uint8_t bus, uint8_t device, uint8_t function) {
-    auto header_type = ReadHeaderType(bus, device, function);
-    if (auto err = AddDevice(bus, device, function, header_type)) {
-      return err;
-    }
-
     auto class_code = ReadClassCode(bus, device, function);
+    auto header_type = ReadHeaderType(bus, device, function);
+    Device dev{bus, device, function, header_type, class_code};
+    if (auto err = AddDevice(dev)) {
+      return err;
+    } 
 
     if (class_code.Match(0x06u, 0x04u)) {
       // PCI-PCI
@@ -151,8 +151,14 @@ namespace pci {
     };
   }
 
+
+  void WriteConfReg(const Device& dev, uint8_t reg_addr, uint32_t value) {
+    WriteAddress(MakeAddress(dev.bus, dev.device, dev.function, reg_addr));
+    WriteData(value);
+  }
+
   bool IsSingleFunctionDevice(uint8_t header_type) {
-    return (header_type >> 7) != 1;
+    return (header_type & 0x80u) == 0;
   }
 
   Error ScanAllBus() {

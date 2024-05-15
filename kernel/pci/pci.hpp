@@ -46,6 +46,8 @@ namespace pci {
   ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function);
   uint32_t ReadBusNumbers(uint8_t bus, uint8_t device, uint8_t function);
   Either<uint64_t> ReadBar(Device& dev, unsigned int bar_index);
+  uint32_t ReadConfReg(const Device& dev, uint8_t reg_addr);
+  void WriteConfReg(const Device& dev, uint8_t reg_addr, uint32_t value);
 
   bool IsSingleFunctionDevice(uint8_t header_type);
 

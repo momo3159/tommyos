@@ -31,4 +31,7 @@ pci/pci.o: pci/pci.cpp pci/pci.hpp \
   /home/tomoya/osbook/devenv/x86_64-elf/include/_ansi.h \
   /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/functional \
   /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/bit \
-  pci/../error.hpp pci/asmfunc.h
+  pci/../error.hpp \
+  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
+  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
+  pci/asmfunc.h
