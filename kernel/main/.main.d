@@ -47,8 +47,8 @@ main/main.o: main/main.cpp \
   /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/array \
   main/../pci/../error.hpp main/../mouse/mouse.hpp \
   main/../mouse/../graphics/graphics.hpp main/../interrupt/interrupt.hpp \
-  main/../logger.hpp usb/memory.hpp usb/device.hpp error.hpp \
-  usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
+  main/../pci/asmfunc.h main/../logger.hpp usb/memory.hpp usb/device.hpp \
+  error.hpp usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
   /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/optional \
   usb/classdriver/mouse.hpp usb/classdriver/hid.hpp \
   usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \

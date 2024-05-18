@@ -13,3 +13,25 @@ IoIn32:
   mov dx, di 
   in  eax, dx
   ret
+
+global GetCS
+GetCS:
+  xor eax, eax
+  mov ax, cs
+  ret
+
+global LoadIDT
+LoadIDT:
+  ; 定形処理
+  push rbp
+  mov rbp, rsp
+  sub rsp, 10
+  ; ここまで 
+  mov [rsp], di
+  mov [rsp + 2], rsi
+  lidt [rsp]
+  ; 定形処理
+  mov rsp, rbp 
+  pop rbp
+  ; ここまで
+  ret

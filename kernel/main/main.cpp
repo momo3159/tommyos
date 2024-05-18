@@ -10,6 +10,7 @@
 #include "../pci/pci.hpp"
 #include "../mouse/mouse.hpp"
 #include "../interrupt/interrupt.hpp"
+#include "../pci/asmfunc.h"
 #include "../logger.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
@@ -139,6 +140,10 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   if (xhc_dev) {
     Log(kDebug, "xHC has been found: %d.%d.%d\n", xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   } 
+
+  const uint16_t cs = GetCS();
+  SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0), reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
+  LoadIDT(sizeof(idt)-1, reinterpret_cast<uintptr_t>(&idt[0]));
 
   const Either<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
