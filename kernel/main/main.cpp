@@ -14,6 +14,7 @@
 #include "../queue/queue.hpp"
 #include "../memory_map/memory_map.hpp"
 #include "../segment/segment.hpp"
+#include "../paging/paging.hpp"
 #include "../x86_descriptor.hpp"
 #include "../logger.hpp"
 #include "usb/memory.hpp"
@@ -128,7 +129,7 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config_
   const uint16_t kernel_ss = 2 << 3;
   SetDSAll(0);
   SetCSSS(kernel_cs, kernel_ss);
-
+  SetupIdentityPageTable();
 
   printk("memory_map: %p\n", &memory_map);
 
