@@ -44,9 +44,10 @@ main/main.o: main/main.cpp \
   main/../font/font.hpp main/../font/../graphics/graphics.hpp \
   main/../console/console.hpp main/../console/../graphics/graphics.hpp \
   main/../pci/pci.hpp \
-  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/array error.hpp \
-  main/../mouse/mouse.hpp main/../mouse/../graphics/graphics.hpp \
-  main/../interrupt/interrupt.hpp main/../pci/asmfunc.h \
+  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/array \
+  main/../pci/../error.hpp main/../mouse/mouse.hpp \
+  main/../mouse/../graphics/graphics.hpp main/../interrupt/interrupt.hpp \
+  main/../pci/asmfunc.h main/../queue/queue.hpp error.hpp \
   main/../logger.hpp usb/memory.hpp usb/device.hpp usb/setupdata.hpp \
   usb/endpoint.hpp usb/arraymap.hpp \
   /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/optional \

@@ -11,6 +11,7 @@
 #include "../mouse/mouse.hpp"
 #include "../interrupt/interrupt.hpp"
 #include "../pci/asmfunc.h"
+#include "../queue/queue.hpp"
 #include "../logger.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
@@ -86,13 +87,17 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
 
 usb::xhci::Controller* xhc;
 
+struct Message {
+  enum Type {
+    kInterruptXHCI,
+  } type;
+};
+
+ArrayQueue<Message>* main_queue;
+
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
-  while(xhc->PrimaryEventRing()->HasFront()) {
-    if (auto err = ProcessEvent(*xhc)) {
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
-    }
-  }
+  main_queue->Push(Message{Message::kInterruptXHCI});
   NotifyEndOfInterrupt();
 }
 
@@ -121,6 +126,10 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   mouse_cursor = new(mouse_cursor_buf) MouseCursor{
     pixel_writer, kDesktopBGColor, {300, 200}
   };
+
+  std::array<Message, 32> main_queue_data;
+  ArrayQueue<Message> main_queue{main_queue_data};
+  ::main_queue = &main_queue;
 
   printk("Welcome to tommyOS!\n");
 
@@ -184,6 +193,30 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
         Log(kError, "failed to configure port: %s at %s:%d\n", err.Name(), err.File(), err.Line());
         continue;
       }
+    }
+  }
+
+  while (true) {
+    __asm__("cli");
+    if (main_queue.Count() == 0) {
+      __asm__("sti\n\thlt"); // hltするが、割り込みを受け付けられる状態にする
+      continue;
+    }
+
+    Message msg = main_queue.Front();
+    main_queue.Pop();
+    __asm__("sti");
+
+    switch(msg.type) {
+      case Message::kInterruptXHCI:
+        while (xhc.PrimaryEventRing()->HasFront()) {
+          if (auto err = ProcessEvent(xhc)) {
+            Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+          }
+        }
+        break;
+      default:
+        Log(kError, "Unknown message type: %d\n", msg.type);
     }
   }
 

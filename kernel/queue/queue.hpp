@@ -1,6 +1,7 @@
 #pragma once 
 #include <cstddef>
 #include <array>
+#include "error.hpp"
 
 template <typename T>
 class ArrayQueue {
@@ -24,10 +25,10 @@ template <size_t N>
 ArrayQueue<T>::ArrayQueue(std::array<T, N>& buf) : ArrayQueue(buf.data(), N) {}
 
 template <typename T>
-ArrayQueue<T>::ArrayQueue(T* buf, size_t size) : data_{buf}, capacity_{size}, read_pos_{0}, write_pos_{0}, count_{0}
+ArrayQueue<T>::ArrayQueue(T* buf, size_t size) : data_{buf}, capacity_{size}, read_pos_{0}, write_pos_{0}, count_{0} {}
 
 template <typename T>
-Error ArrayQueue<T> Push(const T& value) {
+Error ArrayQueue<T>::Push(const T& value) {
   if (count_ == capacity_) {
     return MAKE_ERROR(Error::kFull);
   }
@@ -41,7 +42,7 @@ Error ArrayQueue<T> Push(const T& value) {
 }
 
 template <typename T>
-Error ArrayQueue<T> Pop() {
+Error ArrayQueue<T>::Pop() {
   if (count_ == 0) {
     return MAKE_ERROR(Error::kEmpty);
   }
