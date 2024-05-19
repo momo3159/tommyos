@@ -13,6 +13,8 @@
 #include "../pci/asmfunc.h"
 #include "../queue/queue.hpp"
 #include "../memory_map/memory_map.hpp"
+#include "../segment/segment.hpp"
+#include "../x86_descriptor.hpp"
 #include "../logger.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
@@ -104,7 +106,10 @@ void IntHandlerXHCI(InterruptFrame* frame) {
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
-extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config, const MemoryMap& memory_map) {
+extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config_ref, const MemoryMap& memory_map_ref) {
+  const FrameBufferConfig& frame_buffer_config{frame_buffer_config_ref};
+  const MemoryMap& memory_map{memory_map_ref};
+
   switch (frame_buffer_config.pixel_format) {
     case kPixelBGRResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter{frame_buffer_config};
@@ -117,6 +122,13 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config,
 
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);
   SetLogLevel(kWarn);
+
+  SetupSegments();
+  const uint16_t kernel_cs = 1 << 3;
+  const uint16_t kernel_ss = 2 << 3;
+  SetDSAll(0);
+  SetCSSS(kernel_cs, kernel_ss);
+
 
   printk("memory_map: %p\n", &memory_map);
 

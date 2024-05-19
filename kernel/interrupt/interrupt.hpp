@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include "../x86_descriptor.hpp"
 
 struct InterruptFrame {
   uint64_t rip;
@@ -11,15 +12,6 @@ struct InterruptFrame {
   uint64_t ss;
 };
 
-enum class DescriptorType {
-  // kUpper8Bytes   = 0,
-  // kLDT           = 2,
-  // kTSSAvailable  = 9,
-  // kTSSBusy       = 11,
-  // kCallGate      = 12,
-  kInterruptGate = 14,
-  kTrapGate      = 15,
-};
 
 // class InterruptVector {
 //   public:
