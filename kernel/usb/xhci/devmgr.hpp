@@ -22,7 +22,7 @@ namespace usb::xhci {
     Device* FindByPort(uint8_t port_num, uint32_t route_string) const;
     Device* FindByState(enum Device::State state) const;
     Device* FindBySlot(uint8_t slot_id) const;
-    //WithError<Device*> Get(uint8_t device_id) const;
+    //Either<Device*> Get(uint8_t device_id) const;
     Error AllocDevice(uint8_t slot_id, DoorbellRegister* dbreg);
     Error LoadDCBAA(uint8_t slot_id);
     Error Remove(uint8_t slot_id);

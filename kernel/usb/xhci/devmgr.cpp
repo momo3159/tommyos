@@ -59,7 +59,7 @@ namespace usb::xhci {
   }
 
   /*
-  WithError<Device*> DeviceManager::Get(uint8_t device_id) const {
+  Either<Device*> DeviceManager::Get(uint8_t device_id) const {
     if (device_id >= num_devices_) {
       return {nullptr, Error::kInvalidDeviceId};
     }
