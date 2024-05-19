@@ -35,3 +35,14 @@ LoadIDT:
   pop rbp
   ; ここまで
   ret
+
+extern kernel_main_stack
+extern KernelMainNewStack
+
+global KernelMain
+KernelMain:
+  mov rsp, kernel_main_stack + 1024 * 1024 ; スタック切り替え. ※ スタックの始点は末尾から
+  call KernelMainNewStack
+.fin:
+  hlt 
+  jmp .fin 

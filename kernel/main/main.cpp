@@ -102,7 +102,9 @@ void IntHandlerXHCI(InterruptFrame* frame) {
   NotifyEndOfInterrupt();
 }
 
-extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config, const MemoryMap& memory_map) {
+alignas(16) uint8_t kernel_main_stack[1024 * 1024];
+
+extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config, const MemoryMap& memory_map) {
   switch (frame_buffer_config.pixel_format) {
     case kPixelBGRResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter{frame_buffer_config};
