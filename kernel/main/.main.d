@@ -50,9 +50,9 @@ main/main.o: main/main.cpp \
   main/../interrupt/../x86_descriptor.hpp main/../pci/asmfunc.h \
   main/../queue/queue.hpp error.hpp main/../memory_map/memory_map.hpp \
   main/../segment/segment.hpp x86_descriptor.hpp \
-  main/../paging/paging.hpp main/../x86_descriptor.hpp \
-  main/../logger.hpp usb/memory.hpp usb/device.hpp usb/setupdata.hpp \
-  usb/endpoint.hpp usb/arraymap.hpp \
+  main/../paging/paging.hpp main/../memory_manager/memory_manager.hpp \
+  main/../x86_descriptor.hpp main/../logger.hpp usb/memory.hpp \
+  usb/device.hpp usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
   /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/optional \
   usb/classdriver/mouse.hpp usb/classdriver/hid.hpp \
   usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \
