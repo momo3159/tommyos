@@ -53,3 +53,5 @@ class BitmapMemoryManager {
     bool GetBit(FrameID frame) const;
     void SetBit(FrameID frame, bool allocted);
 };
+
+Error InitializeHeap(BitmapMemoryManager& memory_manager);
