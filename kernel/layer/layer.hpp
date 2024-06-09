@@ -45,4 +45,4 @@ class LayerManager {
     Layer* FindLayer(unsigned int id);
 };
 
-extern LayerManager* layer_manager_;
+extern LayerManager* layer_manager;

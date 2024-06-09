@@ -16,6 +16,8 @@
 #include "../segment/segment.hpp"
 #include "../paging/paging.hpp"
 #include "../memory_manager/memory_manager.hpp"
+#include "../window/window.hpp"
+#include "../layer/layer.hpp"
 #include "../x86_descriptor.hpp"
 #include "../logger.hpp"
 #include "usb/memory.hpp"
@@ -29,9 +31,6 @@ PixelWriter* pixel_writer;
 
 char console_buf[sizeof(Console)];
 Console* console;
-
-char mouse_cursor_buf[sizeof(MouseCursor)];
-MouseCursor* mouse_cursor;
 
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
@@ -48,10 +47,6 @@ int printk(const char* format, ...) {
   console->PutString(s);
   return result;
 }
-
-
-const PixelColor kDesktopBGColor = BLUE;
-const PixelColor kDesktopFGColor = WHITE;
 
 pci::Device* lookupXHC() {
   pci::Device* xhc_dev = nullptr;
@@ -89,8 +84,11 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
       superspeed_ports, ehci2xhci_ports);
 }
 
+unsigned int mouse_layer_id;
+
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  mouse_cursor->MoveRelative({displacement_x, displacement_y});
+  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  layer_manager->Draw();
 }
 
 usb::xhci::Controller* xhc;
@@ -125,7 +123,10 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config_
 
   }
 
-  console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);
+  // ウィンドウを用意するまではフレームバッファに直接書き込む
+  console = new(console_buf) Console(kDesktopFGColor, kDesktopBGColor);
+  console->SetWriter(pixel_writer);
+
   SetLogLevel(kWarn);
 
   SetupSegments();
@@ -178,17 +179,7 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config_
     exit(1);
   }
   
-  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
-  const int kFrameHeight = frame_buffer_config.vertical_resolution;
-
-  FillRectangle(*pixel_writer, {0, 0}, {kFrameWidth, kFrameHeight - 50}, kDesktopBGColor); 
-  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth, 50}, BLACK);
-  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth / 5, 50}, GLAY);
-  DrawRectangle(*pixel_writer, {10, kFrameHeight - 40}, {30, 30}, {160, 160, 160});
-
-  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
-    pixel_writer, kDesktopBGColor, {300, 200}
-  };
+  DrawDesktop(*pixel_writer);
 
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
@@ -258,6 +249,36 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig& frame_buffer_config_
       }
     }
   }
+
+  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
+  const int kFrameHeight = frame_buffer_config.vertical_resolution;
+
+  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
+  auto bgwriter = bgwindow->Writer();
+
+  DrawDesktop(*bgwriter); // Window.dataへの書き込み
+  console->SetWriter(bgwriter); // Consoleもwindowへの描画
+
+  auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight);
+  mouse_window->SetTransparentColor(kMouseTransparentColor);
+  DrawMouseCursor(mouse_window->Writer(), {0, 0});
+
+  layer_manager = new LayerManager;
+  layer_manager->SetWriter(pixel_writer);
+
+  auto bglayer_id = layer_manager->NewLayer()
+    .SetWindow(bgwindow)
+    .Move({0, 0})
+    .ID();
+  mouse_layer_id = layer_manager->NewLayer()
+    .SetWindow(mouse_window)
+    .Move({200, 200})
+    .ID();
+
+  layer_manager->UpDown(bglayer_id, 0);
+  layer_manager->UpDown(mouse_layer_id, 1);
+  layer_manager->Draw();
+
 
   while (true) {
     __asm__("cli");

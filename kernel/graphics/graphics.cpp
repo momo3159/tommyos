@@ -33,3 +33,10 @@ void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D
     }
   }
 }
+
+void DrawDesktop(PixelWriter& writer) {
+  FillRectangle(writer, {0, 0}, {writer.Width(), writer.Height() - 50}, kDesktopBGColor); 
+  FillRectangle(writer, {0, writer.Height() - 50}, {writer.Width(), 50}, BLACK);
+  FillRectangle(writer, {0, writer.Height() - 50}, {writer.Width() / 5, 50}, GLAY);
+  DrawRectangle(writer, {10, writer.Height() - 40}, {30, 30}, {160, 160, 160});
+}

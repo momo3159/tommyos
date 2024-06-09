@@ -23,6 +23,10 @@ static const PixelColor WHITE = PixelColor{255, 255, 255};
 static const PixelColor BLUE  = PixelColor{45, 118, 237};
 static const PixelColor GLAY  = PixelColor{80, 80, 80};
 
+
+const PixelColor kDesktopBGColor = BLUE;
+const PixelColor kDesktopFGColor = WHITE;
+
 template <typename T>
 struct Vector2D {
   T x, y;
@@ -74,3 +78,4 @@ class RGBResv8BitPerColorPixelWriter : public FrameBufferWriter {
 
 void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c);
 void DrawRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D<int>& size, const PixelColor& c);
+void DrawDesktop(PixelWriter& writer);

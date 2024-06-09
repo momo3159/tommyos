@@ -51,10 +51,17 @@ main/main.o: main/main.cpp \
   main/../queue/queue.hpp error.hpp main/../memory_map/memory_map.hpp \
   main/../segment/segment.hpp x86_descriptor.hpp \
   main/../paging/paging.hpp main/../memory_manager/memory_manager.hpp \
-  main/../x86_descriptor.hpp main/../logger.hpp usb/memory.hpp \
-  usb/device.hpp usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
+  main/../window/window.hpp \
   /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/optional \
-  usb/classdriver/mouse.hpp usb/classdriver/hid.hpp \
-  usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \
-  register.hpp usb/xhci/context.hpp usb/xhci/ring.hpp usb/xhci/trb.hpp \
-  usb/xhci/port.hpp usb/xhci/devmgr.hpp usb/xhci/device.hpp
+  main/../window/../graphics/graphics.hpp main/../layer/layer.hpp \
+  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/map \
+  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/__tree \
+  /home/tomoya/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \
+  main/../layer/../graphics/graphics.hpp \
+  main/../layer/../window/window.hpp main/../x86_descriptor.hpp \
+  main/../logger.hpp usb/memory.hpp usb/device.hpp usb/setupdata.hpp \
+  usb/endpoint.hpp usb/arraymap.hpp usb/classdriver/mouse.hpp \
+  usb/classdriver/hid.hpp usb/classdriver/base.hpp usb/xhci/xhci.hpp \
+  usb/xhci/registers.hpp register.hpp usb/xhci/context.hpp \
+  usb/xhci/ring.hpp usb/xhci/trb.hpp usb/xhci/port.hpp \
+  usb/xhci/devmgr.hpp usb/xhci/device.hpp
