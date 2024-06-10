@@ -81,6 +81,6 @@ Error InitializeHeap(BitmapMemoryManager& memory_manager) {
   }
 
   program_break = reinterpret_cast<caddr_t>(heap_start.value.ID() * kBytesPerFrame);
-  program_break_end = program_break + kHeapFrames + kBytesPerFrame;
+  program_break_end = program_break + kHeapFrames * kBytesPerFrame;
   return MAKE_ERROR(Error::kSuccess);
 }

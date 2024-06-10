@@ -11,11 +11,11 @@ class Window {
     class WindowWriter : public PixelWriter {
       public:
         WindowWriter(Window& window) : window_{window} {}
-        virtual void Write(int x, int y, const PixelColor& c) {
+        virtual void Write(int x, int y, const PixelColor& c) override {
           window_.At(x, y) = c;
         }
         virtual int Width() const override { return window_.Width(); }
-        virtual int Height() const override { return window_.Width(); }
+        virtual int Height() const override { return window_.Height(); }
       private:
         Window& window_;
     };
